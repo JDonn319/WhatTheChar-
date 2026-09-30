@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --sat: env(safe-area-inset-top);
-  --sab: env(safe-area-inset-bottom);
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -17,12 +12,26 @@
   user-select: none;
 }
 
-html, body, #root {
-  width: 100vw;
-  height: 100dvh;
-  position: fixed;
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   touch-action: none;
   background-color: #000000;
   color: #ffffff;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
 }
