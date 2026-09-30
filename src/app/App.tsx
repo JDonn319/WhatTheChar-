@@ -26,21 +26,18 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className="w-screen h-[100dvh] bg-black text-white overflow-hidden relative font-sans">
-      {/* Кастомный фон с размытием */}
+    <main className="fixed inset-0 w-full h-full bg-black text-white overflow-hidden font-sans">
       {backgroundUrl && (
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30 blur-sm scale-105 pointer-events-none transition-all duration-700"
+          className="absolute inset-0 bg-cover bg-center opacity-25 blur-sm scale-105 pointer-events-none transition-all duration-700"
           style={{ backgroundImage: `url(${backgroundUrl})` }}
         />
       )}
 
-      {/* Белый экран загрузки с честной шкалой */}
       {isLoading && (
         <SplashScreen onLoaded={() => setIsLoading(false)} />
       )}
 
-      {/* Экран меню или игры */}
       {!isLoading && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
