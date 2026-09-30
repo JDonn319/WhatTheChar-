@@ -1,38 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { SplashScreen } from '../ui/SplashScreen.tsx';
+import React, { useState } from 'react';
+import { SplashScreen } from '../ui/SplashScreen';
+import { MainMenu } from '../ui/MainMenu';
+import { GameBoard } from '../ui/GameBoard';
+import { Character, getRandom24, UniverseType } from '../data/characters';
 
 export const App: React.FC = () => {
-  const [isPortrait, setIsPortrait] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [gameState, setGameState] = useState<'menu' | 'playing'>('menu');
+  const [activeCharacters, setActiveCharacters] = useState<Character[]>([]);
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [backgroundUrl, setBackgroundUrl] = useState(
+    'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
+  );
 
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsPortrait(window.innerHeight >= window.innerWidth);
-    };
+  const startSinglePlayer = (universe: UniverseType) => {
+    setActiveCharacters(getRandom24(universe));
+    setIsAiMode(true);
+    setGameState('playing');
+  };
 
-    checkOrientation();
-    window.addEventListener('resize', checkOrientation);
-    window.addEventListener('orientationchange', checkOrientation);
-
-    return () => {
-      window.removeEventListener('resize', checkOrientation);
-      window.removeEventListener('orientationchange', checkOrientation);
-    };
-  }, []);
+  const startMultiplayer = (universe: UniverseType) => {
+    setActiveCharacters(getRandom24(universe));
+    setIsAiMode(false);
+    setGameState('playing');
+  };
 
   return (
-    <main className="w-screen h-[100dvh] bg-black text-white overflow-hidden relative">
-      {/* Предупреждение при повороте в горизонтальный режим */}
-      {!isPortrait ? (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black p-6 text-center">
-          <p className="text-sm font-medium text-neutral-400 uppercase tracking-widest">
-            Пожалуйста, поверните устройство вертикально
-          </p>
-        </div>
-      ) : (
-        /* Основной вертикальный контейнер */
-        <div className="w-full h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-          <SplashScreen />
-        </div>
+    <main className="w-screen h-[100dvh] bg-black text-white overflow-hidden relative font-sans">
+      {/* Кастомный фон с размытием */}
+      {backgroundUrl && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-30 blur-sm scale-105 pointer-events-none transition-all duration-700"
+          style={{ backgroundImage: `url(${backgroundUrl})` }}
+        />
+      )}
+
+      {/* Белый экран загрузки с честной шкалой */}
+      {isLoading && (
+        <SplashScreen onLoaded={() => setIsLoading(false)} />
+      )}
+
+      {/* Экран меню или игры */}
+      {!isLoading && gameState === 'menu' && (
+        <MainMenu 
+          onStartSingle={startSinglePlayer}
+          onStartMulti={startMultiplayer}
+          currentBg={backgroundUrl}
+          onChangeBg={setBackgroundUrl}
+        />
+      )}
+
+      {!isLoading && gameState === 'playing' && (
+        <GameBoard 
+          characters={activeCharacters}
+          isAiMode={isAiMode}
+          onBackToMenu={() => setGameState('menu')}
+        />
       )}
     </main>
   );
