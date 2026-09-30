@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Info, MessageSquare, Send, X, LogOut, Check } from 'lucide-react';
 import { Character } from '../data/characters';
 
 interface GameBoardProps {
@@ -8,29 +9,20 @@ interface GameBoardProps {
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, isAiMode }) => {
-  // Выбор своего персонажа
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
-
-  // Состояния карточек на поле (вычеркнутые)
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
-
-  // Досье персонажа [i]
   const [infoChar, setInfoChar] = useState<Character | null>(null);
-
-  // Режим выбора/угадывания персонажа по Long-press
   const [accuseChar, setAccuseChar] = useState<Character | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Чат
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([
-    { sender: 'opponent', text: 'Я загадал персонажа. Твой ход! Задавай вопрос.' }
+    { sender: 'opponent', text: 'Я загадал персонажа. Задавай наводящий вопрос!' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
 
-  // Одиночный клик: затемнение
   const handleCardClick = (char: Character) => {
     if (!isConfirmed) {
       setSelectedChar(char);
@@ -41,12 +33,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
     );
   };
 
-  // Обработка долгого зажатия на iOS (Long press)
   const handleTouchStart = (char: Character) => {
     if (!isConfirmed) return;
     longPressTimer.current = setTimeout(() => {
       setAccuseChar(char);
-    }, 550);
+    }, 500);
   };
 
   const handleTouchEnd = () => {
@@ -60,53 +51,52 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
     setInputText('');
     setIsMyTurn(false);
 
-    // Заглушка хода соперника / ИИ
     if (isAiMode) {
       setTimeout(() => {
         setMessages(prev => [
           ...prev, 
-          { sender: 'opponent', text: 'Да. Теперь мой вопрос: твой герой носит костюм?' }
+          { sender: 'opponent', text: 'Да. Мой вопрос: этот персонаж носит маску или шлем?' }
         ]);
         setIsMyTurn(true);
-      }, 1500);
+      }, 1400);
     }
   };
 
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
       
-      {/* Верхний бар после подтверждения */}
+      {/* Верхний бар закрепленного персонажа */}
       {isConfirmed && selectedChar && (
-        <div className="w-full flex items-center justify-between p-3 bg-white/10 backdrop-blur-xl border-b border-white/10 z-20">
-          <div className="flex items-center gap-3">
+        <div className="w-full flex items-center justify-between p-2.5 bg-black/80 backdrop-blur-xl border-b border-white/20 z-20">
+          <div className="flex items-center gap-2.5">
             <img 
               src={selectedChar.avatar} 
               alt={selectedChar.name} 
-              className="w-10 h-10 rounded-full object-cover border border-white"
+              className="w-9 h-9 object-cover border border-white"
             />
             <div className="flex flex-col">
-              <span className="text-[10px] text-neutral-400 font-semibold uppercase">Твой персонаж:</span>
-              <span className="text-xs font-bold leading-tight">{selectedChar.name}</span>
+              <span className="text-[9px] text-neutral-400 font-semibold uppercase">Твой персонаж:</span>
+              <span className="text-xs font-bold leading-tight truncate max-w-[150px]">{selectedChar.name}</span>
             </div>
             <button 
               onClick={() => setInfoChar(selectedChar)}
-              className="w-6 h-6 rounded-full bg-white/20 text-[11px] font-bold flex items-center justify-center ml-1 active:scale-90"
+              className="w-6 h-6 bg-white/20 border border-white/30 flex items-center justify-center active:bg-white active:text-black ml-1"
             >
-              i
+              <Info size={12} />
             </button>
           </div>
           
           <button 
             onClick={onBackToMenu}
-            className="text-xs text-neutral-400 font-semibold px-2 py-1 bg-white/5 rounded-lg active:scale-95"
+            className="p-2 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
           >
-            Выход
+            <LogOut size={14} />
           </button>
         </div>
       )}
 
-      {/* Игровая сетка (24 квадратика) */}
-      <div className={`w-full flex-1 p-2 grid grid-cols-4 grid-rows-6 gap-2 overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
+      {/* Сетка 4х6: ИДЕАЛЬНЫЕ КВАДРАТЫ (aspect-square) БЕЗ СКРУГЛЕНИЙ */}
+      <div className={`w-full flex-1 p-1.5 grid grid-cols-4 grid-rows-6 gap-1.5 overflow-hidden place-content-center ${accuseChar ? 'blur-md' : ''}`}>
         {characters.map(char => {
           const isEliminated = eliminatedIds.includes(char.id);
           const isCurrentSelected = selectedChar?.id === char.id;
@@ -119,11 +109,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               onTouchEnd={handleTouchEnd}
               onMouseDown={() => handleTouchStart(char)}
               onMouseUp={handleTouchEnd}
-              className={`relative rounded-xl overflow-hidden border transition-all duration-200 flex flex-col justify-end p-1 ${
+              className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-1 overflow-hidden ${
                 !isConfirmed && isCurrentSelected
                   ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_15px_white]'
                   : isEliminated
-                  ? 'opacity-25 grayscale border-transparent'
+                  ? 'opacity-20 grayscale border-transparent bg-neutral-950'
                   : 'border-white/20 active:scale-95 bg-neutral-900'
               }`}
             >
@@ -132,8 +122,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                 alt={char.name} 
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <span className="relative z-10 text-[9px] font-bold text-center leading-tight truncate text-white drop-shadow">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+              <span className="relative z-10 text-[8px] font-black uppercase text-center leading-tight truncate text-white drop-shadow">
                 {char.name}
               </span>
             </div>
@@ -141,113 +131,114 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         })}
       </div>
 
-      {/* Окно подтверждения начального выбора персонажа */}
+      {/* Окно подтверждения стартового выбора персонажа */}
       {!isConfirmed && selectedChar && (
-        <div className="absolute bottom-0 inset-x-0 bg-black/80 backdrop-blur-2xl border-t border-white/20 p-5 flex flex-col gap-3 z-30 animate-in fade-in slide-in-from-bottom duration-300">
+        <div className="absolute bottom-0 inset-x-0 bg-black/95 backdrop-blur-2xl border-t border-white/20 p-4 flex flex-col gap-2.5 z-30">
           <div>
-            <h3 className="text-lg font-black">{selectedChar.name}</h3>
-            <p className="text-xs text-neutral-300 mt-1 line-clamp-2">{selectedChar.shortDesc}</p>
+            <h3 className="text-base font-black uppercase">{selectedChar.name}</h3>
+            <p className="text-[11px] text-neutral-300 line-clamp-2">{selectedChar.shortDesc}</p>
           </div>
           <button
             onClick={() => setIsConfirmed(true)}
-            className="w-full py-3 rounded-xl bg-white text-black font-extrabold text-sm active:scale-95 transition-transform"
+            className="w-full py-3.5 bg-white text-black font-black text-xs active:bg-neutral-300 transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5"
           >
-            ПОДТВЕРДИТЬ ВЫБОР
+            <Check size={16} />
+            Подтвердить выбор
           </button>
         </div>
       )}
 
-      {/* Окно долгого нажатия: Кнопка "ВЫБРАТЬ (УГАДАТЬ)" */}
+      {/* Режим угадывания по долгому зажатию */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xs bg-black/80 backdrop-blur-2xl border border-white/30 rounded-3xl p-6 flex flex-col items-center gap-4 text-center"
+            className="w-full max-w-xs bg-black border border-white/40 p-5 flex flex-col items-center gap-3.5 text-center shadow-2xl"
           >
             <img 
               src={accuseChar.avatar} 
               alt={accuseChar.name} 
-              className="w-28 h-28 rounded-2xl object-cover border-2 border-white shadow-2xl"
+              className="w-28 h-28 object-cover border border-white"
             />
-            <h4 className="text-base font-bold">{accuseChar.name}</h4>
-            <p className="text-xs text-neutral-400">Это тайный персонаж соперника?</p>
+            <h4 className="text-sm font-black uppercase">{accuseChar.name}</h4>
+            <p className="text-[11px] text-neutral-400">Это секретный персонаж соперника?</p>
             
-            <div className="flex gap-2 w-full pt-2">
+            <div className="flex gap-2 w-full pt-1">
               <button
                 onClick={() => setAccuseChar(null)}
-                className="flex-1 py-3 bg-white/10 rounded-xl text-xs font-bold"
+                className="flex-1 py-3 bg-white/10 border border-white/20 text-xs font-bold"
               >
                 Отмена
               </button>
               <button
                 onClick={() => {
-                  alert(`Проверка: если соперник выбрал ${accuseChar.name} — ПОБЕДА!`);
+                  alert(`Проверка догадки: если соперник выбрал ${accuseChar.name} — ПОБЕДА!`);
                   onBackToMenu();
                 }}
-                className="flex-1 py-3 bg-white text-black rounded-xl text-xs font-extrabold"
+                className="flex-1 py-3 bg-white text-black text-xs font-black uppercase"
               >
-                ВЫБРАТЬ
+                Выбрать
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Модалка досье из Википедии [i] */}
+      {/* Модалка Википедии [i] */}
       {infoChar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-6">
-          <div className="w-full max-w-sm bg-neutral-900 border border-white/20 rounded-3xl p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-5">
+          <div className="w-full max-w-sm bg-neutral-950 border border-white/30 p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-start">
-              <h3 className="text-lg font-black">{infoChar.name}</h3>
-              <button onClick={() => setInfoChar(null)} className="text-neutral-400 text-lg">✕</button>
+              <h3 className="text-base font-black uppercase">{infoChar.name}</h3>
+              <button onClick={() => setInfoChar(null)} className="text-neutral-400 p-1">
+                <X size={18} />
+              </button>
             </div>
-            <img src={infoChar.avatar} alt={infoChar.name} className="w-full h-44 rounded-xl object-cover" />
+            <img src={infoChar.avatar} alt={infoChar.name} className="w-full h-44 object-cover border border-white/20" />
             <p className="text-xs text-neutral-300 leading-relaxed font-sans">{infoChar.wiki}</p>
           </div>
         </div>
       )}
 
-      {/* Кнопка открытия полноэкранного мессенджера */}
+      {/* Нижняя панель с кнопкой чата */}
       {isConfirmed && (
-        <div className="p-3 bg-black/40 backdrop-blur-md border-t border-white/10 flex items-center justify-between z-20">
-          <span className="text-[11px] text-neutral-400">
-            {isMyTurn ? 'Ваш ход: задайте вопрос' : 'Ход соперника...'}
+        <div className="p-2.5 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода соперника...'}
           </span>
           <button
             onClick={() => setIsChatOpen(true)}
-            className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center font-bold text-lg shadow-lg active:scale-90 transition-transform"
+            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors"
           >
-            💬
+            <MessageSquare size={16} />
           </button>
         </div>
       )}
 
-      {/* Полноэкранный чат-мессенджер */}
+      {/* Полноэкранный чат ходов */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 animate-in slide-in-from-bottom duration-300">
-          {/* Шапка чата */}
-          <div className="flex justify-between items-center pb-3 border-b border-white/10">
-            <span className="text-sm font-bold">Чат раунда</span>
+        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4">
+          <div className="flex justify-between items-center pb-3 border-b border-white/20">
+            <span className="text-xs font-black uppercase tracking-wider">Игровой диалог ходов</span>
             <button 
               onClick={() => setIsChatOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm"
+              className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center"
             >
-              ✕
+              <X size={16} />
             </button>
           </div>
 
-          {/* Сообщения */}
-          <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5">
             {messages.map((m, idx) => (
               <div 
                 key={idx} 
-                className={`max-w-[80%] p-3 rounded-2xl text-xs leading-relaxed ${
+                className={`max-w-[85%] p-3 text-xs leading-relaxed border ${
                   m.sender === 'you' 
-                    ? 'ml-auto bg-white text-black rounded-tr-none font-medium' 
-                    : 'mr-auto bg-white/10 text-white rounded-tl-none border border-white/10'
+                    ? 'ml-auto bg-white text-black border-white font-medium' 
+                    : 'mr-auto bg-white/10 text-white border-white/20'
                 }`}
               >
                 {m.text}
@@ -255,22 +246,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             ))}
           </div>
 
-          {/* Поле ввода вопроса (только в свой ход) */}
-          <div className="flex gap-2 pt-2 border-t border-white/10">
+          <div className="flex gap-1.5 pt-2 border-t border-white/20">
             <input 
               type="text"
               value={inputText}
               disabled={!isMyTurn}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={isMyTurn ? "Напишите вопрос..." : "Ожидание ответа соперника..."}
-              className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
+              placeholder={isMyTurn ? "Введите вопрос сопернику..." : "Ход соперника..."}
+              className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
             />
             <button
               onClick={handleSendMessage}
               disabled={!isMyTurn || !inputText.trim()}
-              className="px-5 py-3 rounded-xl bg-white text-black font-extrabold text-xs active:scale-95 disabled:opacity-30"
+              className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center"
             >
-              Отправить
+              <Send size={14} />
             </button>
           </div>
         </div>
