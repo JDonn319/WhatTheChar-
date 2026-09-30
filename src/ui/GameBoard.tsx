@@ -18,7 +18,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([
-    { sender: 'opponent', text: 'Я загадал персонажа. Задавай наводящий вопрос!' }
+    { sender: 'opponent', text: 'Я загадал персонажа. Задавай вопрос про его внешность или костюм!' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
@@ -55,7 +55,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
       setTimeout(() => {
         setMessages(prev => [
           ...prev, 
-          { sender: 'opponent', text: 'Да. Мой вопрос: этот персонаж носит маску или шлем?' }
+          { sender: 'opponent', text: 'Да. Мой вопрос: на твоем герое надет шлем или маска?' }
         ]);
         setIsMyTurn(true);
       }, 1400);
@@ -65,9 +65,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
       
-      {/* Верхний бар закрепленного персонажа */}
-      {isConfirmed && selectedChar && (
-        <div className="w-full flex items-center justify-between p-2.5 bg-black/80 backdrop-blur-xl border-b border-white/20 z-20">
+      {/* Верхний бар с безопасным отступом сверху */}
+      <div className="w-full pt-[max(env(safe-area-inset-top),16px)] pb-2 px-3 bg-black/80 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between">
+        {isConfirmed && selectedChar ? (
           <div className="flex items-center gap-2.5">
             <img 
               src={selectedChar.avatar} 
@@ -75,7 +75,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               className="w-9 h-9 object-cover border border-white"
             />
             <div className="flex flex-col">
-              <span className="text-[9px] text-neutral-400 font-semibold uppercase">Твой персонаж:</span>
+              <span className="text-[9px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
               <span className="text-xs font-bold leading-tight truncate max-w-[150px]">{selectedChar.name}</span>
             </div>
             <button 
@@ -85,55 +85,65 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               <Info size={12} />
             </button>
           </div>
-          
-          <button 
-            onClick={onBackToMenu}
-            className="p-2 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
-          >
-            <LogOut size={14} />
-          </button>
-        </div>
-      )}
+        ) : (
+          <span className="text-xs font-black uppercase tracking-wider text-neutral-300">
+            Выберите своего персонажа
+          </span>
+        )}
 
-      {/* Сетка 4х6: ИДЕАЛЬНЫЕ КВАДРАТЫ (aspect-square) БЕЗ СКРУГЛЕНИЙ */}
-      <div className={`w-full flex-1 p-1.5 grid grid-cols-4 grid-rows-6 gap-1.5 overflow-hidden place-content-center ${accuseChar ? 'blur-md' : ''}`}>
-        {characters.map(char => {
-          const isEliminated = eliminatedIds.includes(char.id);
-          const isCurrentSelected = selectedChar?.id === char.id;
-
-          return (
-            <div
-              key={char.id}
-              onClick={() => handleCardClick(char)}
-              onTouchStart={() => handleTouchStart(char)}
-              onTouchEnd={handleTouchEnd}
-              onMouseDown={() => handleTouchStart(char)}
-              onMouseUp={handleTouchEnd}
-              className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-1 overflow-hidden ${
-                !isConfirmed && isCurrentSelected
-                  ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_15px_white]'
-                  : isEliminated
-                  ? 'opacity-20 grayscale border-transparent bg-neutral-950'
-                  : 'border-white/20 active:scale-95 bg-neutral-900'
-              }`}
-            >
-              <img 
-                src={char.avatar} 
-                alt={char.name} 
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
-              <span className="relative z-10 text-[8px] font-black uppercase text-center leading-tight truncate text-white drop-shadow">
-                {char.name}
-              </span>
-            </div>
-          );
-        })}
+        <button 
+          onClick={onBackToMenu}
+          className="p-2 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+        >
+          <LogOut size={14} />
+        </button>
       </div>
 
-      {/* Окно подтверждения стартового выбора персонажа */}
+      {/* Игровое поле: 24 СТРОГИХ КВАДРАТА (aspect-square) */}
+      <div className={`w-full flex-1 px-2 py-1 flex items-center justify-center overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
+        <div className="w-full grid grid-cols-4 gap-1.5 max-w-sm place-content-center">
+          {characters.map(char => {
+            const isEliminated = eliminatedIds.includes(char.id);
+            const isCurrentSelected = selectedChar?.id === char.id;
+
+            return (
+              <div
+                key={char.id}
+                onClick={() => handleCardClick(char)}
+                onTouchStart={() => handleTouchStart(char)}
+                onTouchEnd={handleTouchEnd}
+                onMouseDown={() => handleTouchStart(char)}
+                onMouseUp={handleTouchEnd}
+                className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-1 overflow-hidden ${
+                  !isConfirmed && isCurrentSelected
+                    ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_15px_white]'
+                    : isEliminated
+                    ? 'opacity-20 grayscale border-transparent bg-neutral-950'
+                    : 'border-white/25 active:scale-95 bg-neutral-900'
+                }`}
+              >
+                <img 
+                  src={char.avatar} 
+                  alt={char.name} 
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  onError={(e) => {
+                    // Резервный цвет, если локальный файл еще не положили
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+                <span className="relative z-10 text-[8px] font-black uppercase text-center leading-tight truncate text-white drop-shadow">
+                  {char.name}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Подтверждение стартового выбора */}
       {!isConfirmed && selectedChar && (
-        <div className="absolute bottom-0 inset-x-0 bg-black/95 backdrop-blur-2xl border-t border-white/20 p-4 flex flex-col gap-2.5 z-30">
+        <div className="absolute bottom-0 inset-x-0 bg-black/95 backdrop-blur-2xl border-t border-white/20 p-4 pb-[max(env(safe-area-inset-bottom),16px)] flex flex-col gap-2.5 z-30">
           <div>
             <h3 className="text-base font-black uppercase">{selectedChar.name}</h3>
             <p className="text-[11px] text-neutral-300 line-clamp-2">{selectedChar.shortDesc}</p>
@@ -148,23 +158,23 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* Режим угадывания по долгому зажатию */}
+      {/* Меню долгого нажатия: Кнопка выбора/угадывания */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xs bg-black border border-white/40 p-5 flex flex-col items-center gap-3.5 text-center shadow-2xl"
+            className="w-full max-w-xs bg-black border border-white/40 p-5 flex flex-col items-center gap-3 text-center shadow-2xl"
           >
             <img 
               src={accuseChar.avatar} 
               alt={accuseChar.name} 
-              className="w-28 h-28 object-cover border border-white"
+              className="w-24 h-24 object-cover border border-white"
             />
             <h4 className="text-sm font-black uppercase">{accuseChar.name}</h4>
-            <p className="text-[11px] text-neutral-400">Это секретный персонаж соперника?</p>
+            <p className="text-[11px] text-neutral-400">Это секретный герой соперника?</p>
             
             <div className="flex gap-2 w-full pt-1">
               <button
@@ -175,7 +185,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               </button>
               <button
                 onClick={() => {
-                  alert(`Проверка догадки: если соперник выбрал ${accuseChar.name} — ПОБЕДА!`);
+                  alert(`Проверка: если соперник выбрал ${accuseChar.name} — ПОБЕДА!`);
                   onBackToMenu();
                 }}
                 className="flex-1 py-3 bg-white text-black text-xs font-black uppercase"
@@ -187,9 +197,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* Модалка Википедии [i] */}
+      {/* Окно сведений из Википедии и приметами костюма [i] */}
       {infoChar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-5">
           <div className="w-full max-w-sm bg-neutral-950 border border-white/30 p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
             <div className="flex justify-between items-start">
               <h3 className="text-base font-black uppercase">{infoChar.name}</h3>
@@ -198,16 +208,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               </button>
             </div>
             <img src={infoChar.avatar} alt={infoChar.name} className="w-full h-44 object-cover border border-white/20" />
+            
+            <div className="p-2.5 bg-white/5 border border-white/10 text-[11px] flex flex-col gap-1">
+              <span className="font-bold text-white uppercase text-[9px] tracking-wider">Приметы на картинке:</span>
+              <p className="text-neutral-300">Цвета: {infoChar.traits.mainColors.join(', ')}</p>
+              <p className="text-neutral-300">Шлем/маска: {infoChar.traits.hasHelmetOrMask ? 'Да' : 'Нет'}</p>
+              <p className="text-neutral-300">Плащ: {infoChar.traits.hasCape ? 'Да' : 'Нет'}</p>
+              <p className="text-neutral-300">Оружие в руках: {infoChar.traits.hasWeapon ? 'Да' : 'Нет'}</p>
+              <p className="text-neutral-400 italic mt-0.5">{infoChar.traits.notes}</p>
+            </div>
+
             <p className="text-xs text-neutral-300 leading-relaxed font-sans">{infoChar.wiki}</p>
           </div>
         </div>
       )}
 
-      {/* Нижняя панель с кнопкой чата */}
+      {/* Нижняя панель с кнопкой чата под Safe Area */}
       {isConfirmed && (
-        <div className="p-2.5 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
+        <div className="px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода соперника...'}
+            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода...'}
           </span>
           <button
             onClick={() => setIsChatOpen(true)}
@@ -218,11 +238,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* Полноэкранный чат ходов */}
+      {/* Чат диалога ходов */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4">
+        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
-            <span className="text-xs font-black uppercase tracking-wider">Игровой диалог ходов</span>
+            <span className="text-xs font-black uppercase tracking-wider">Вопросы и ответы раунда</span>
             <button 
               onClick={() => setIsChatOpen(false)}
               className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center"
@@ -231,7 +251,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5">
+          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2">
             {messages.map((m, idx) => (
               <div 
                 key={idx} 
@@ -252,7 +272,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               value={inputText}
               disabled={!isMyTurn}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={isMyTurn ? "Введите вопрос сопернику..." : "Ход соперника..."}
+              placeholder={isMyTurn ? "Например: «Твой персонаж в шлеме?»" : "Ждем соперника..."}
               className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
             />
             <button
