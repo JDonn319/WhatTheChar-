@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SplashScreen } from '../ui/SplashScreen';
 import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
-import { Character, getRandom24, UniverseType } from '../data/characters';
+import { Character, getRandom36, UniverseType } from '../data/characters';
 
 export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,13 +14,13 @@ export const App: React.FC = () => {
   );
 
   const startSinglePlayer = (universe: UniverseType) => {
-    setActiveCharacters(getRandom24(universe));
+    setActiveCharacters(getRandom36(universe));
     setIsAiMode(true);
     setGameState('playing');
   };
 
   const startMultiplayer = (universe: UniverseType) => {
-    setActiveCharacters(getRandom24(universe));
+    setActiveCharacters(getRandom36(universe));
     setIsAiMode(false);
     setGameState('playing');
   };
