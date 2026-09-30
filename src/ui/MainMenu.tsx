@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Settings, Play, Users, Check } from 'lucide-react';
 import { UniverseType } from '../data/characters';
 
 interface MainMenuProps {
@@ -11,7 +12,6 @@ interface MainMenuProps {
 export const MainMenu: React.FC<MainMenuProps> = ({ 
   onStartSingle, 
   onStartMulti, 
-  currentBg, 
   onChangeBg 
 }) => {
   const [selectedUniverse, setSelectedUniverse] = useState<UniverseType>('all');
@@ -26,79 +26,82 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   ];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between p-6 z-10">
-      {/* Верхний бар */}
+    <div className="relative w-full h-full flex flex-col justify-between p-5 z-10">
+      {/* Шапка с иконкой настроек */}
       <header className="flex justify-between items-center pt-2">
-        <h2 className="text-xl font-black tracking-tight text-white drop-shadow-md">
+        <h2 className="text-xl font-black tracking-tight text-white drop-shadow-md uppercase">
           WhatTheChar?
         </h2>
         <button 
           onClick={() => setShowSettings(!showSettings)}
-          className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:scale-95 transition-all text-sm"
+          className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-all"
         >
-          ⚙️
+          <Settings size={18} />
         </button>
       </header>
 
-      {/* Меню настроек смены фона */}
+      {/* Меню смены фона без скруглений */}
       {showSettings && (
-        <div className="absolute top-16 right-6 w-64 bg-black/60 backdrop-blur-xl border border-white/20 rounded-2xl p-4 z-50 text-xs flex flex-col gap-2">
-          <p className="font-bold text-neutral-300">Сменить фон:</p>
+        <div className="absolute top-16 right-5 w-60 bg-black/90 backdrop-blur-xl border border-white/20 p-4 z-50 text-xs flex flex-col gap-2">
+          <p className="font-bold text-neutral-300 uppercase tracking-wider text-[10px]">Выбор фона:</p>
           <button 
-            onClick={() => onChangeBg('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000')}
-            className="p-2 bg-white/10 rounded-lg text-left"
+            onClick={() => { onChangeBg('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'); setShowSettings(false); }}
+            className="p-2 bg-white/10 text-left border border-white/10 hover:bg-white/20"
           >
             Неон Киберпанк
           </button>
           <button 
-            onClick={() => onChangeBg('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000')}
-            className="p-2 bg-white/10 rounded-lg text-left"
+            onClick={() => { onChangeBg('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000'); setShowSettings(false); }}
+            className="p-2 bg-white/10 text-left border border-white/10 hover:bg-white/20"
           >
             Глубокий Космос
           </button>
           <button 
-            onClick={() => onChangeBg('')}
-            className="p-2 bg-white/10 rounded-lg text-left text-neutral-400"
+            onClick={() => { onChangeBg(''); setShowSettings(false); }}
+            className="p-2 bg-white/10 text-left border border-white/10 text-neutral-400"
           >
-            Чистый черный
+            Чистый чёрный
           </button>
         </div>
       )}
 
-      {/* Выбор Вселенной (в столбик) */}
-      <div className="flex flex-col gap-2 my-auto max-w-sm w-full mx-auto">
-        <span className="text-[10px] tracking-widest uppercase font-bold text-neutral-400 pl-2">
-          Выберите тему:
+      {/* Список выбора вселенных */}
+      <div className="flex flex-col gap-1.5 my-auto max-w-sm w-full mx-auto">
+        <span className="text-[10px] tracking-widest uppercase font-bold text-neutral-400 pl-1">
+          Выбор вселенной:
         </span>
         {universes.map(u => (
           <button
             key={u.id}
             onClick={() => setSelectedUniverse(u.id)}
-            className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-wider transition-all duration-300 backdrop-blur-md border ${
+            className={`w-full py-3.5 px-4 text-xs font-bold tracking-wider transition-all duration-150 backdrop-blur-md border flex items-center justify-between ${
               selectedUniverse === u.id
-                ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.4)] scale-[1.02]'
-                : 'bg-white/10 text-white/80 border-white/10 active:scale-95'
+                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                : 'bg-white/10 text-white/80 border-white/10 active:bg-white/20'
             }`}
           >
-            {u.label}
+            <span>{u.label}</span>
+            {selectedUniverse === u.id && <Check size={14} />}
           </button>
         ))}
       </div>
 
-      {/* Основные кнопки старта игры */}
-      <div className="flex flex-col gap-3 pb-6 max-w-sm w-full mx-auto">
+      {/* Кнопки режимов игры */}
+      <div className="flex flex-col gap-2 pb-4 max-w-sm w-full mx-auto">
         <button
           onClick={() => onStartMulti(selectedUniverse)}
-          className="w-full py-4 rounded-2xl bg-white/15 backdrop-blur-lg border border-white/30 text-white font-extrabold tracking-wide active:scale-95 transition-all shadow-lg"
+          className="w-full py-4 bg-white/10 backdrop-blur-lg border border-white/30 text-white font-black tracking-wider active:bg-white active:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase"
         >
-          СОЗДАТЬ КОМНАТУ
+          <Users size={16} />
+          Создать комнату
         </button>
 
         <button
           onClick={() => onStartSingle(selectedUniverse)}
-          className="w-full py-4 rounded-2xl bg-white text-black font-extrabold tracking-wide active:scale-95 transition-all shadow-xl"
+          className="w-full py-4 bg-white text-black font-black tracking-wider active:bg-neutral-300 transition-all flex items-center justify-center gap-2 text-xs uppercase"
         >
-          ОДИНОЧНАЯ ИГРА (С ИИ)
+          <Play size={16} />
+          Одиночная игра (ИИ)
         </button>
       </div>
     </div>
