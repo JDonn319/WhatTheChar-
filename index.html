@@ -1,27 +1,37 @@
-<!DOCTYPE html>
-<html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <title>WhatTheChar?</title>
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-    <!-- Запрет масштабирования, фиксация под Safe Area (Dynamic Island / Чёлка) -->
-    <meta 
-      name="viewport" 
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" 
-    />
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 
-    <!-- Настройки Apple PWA -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="WhatTheChar?" />
-    <link rel="apple-touch-icon" href="/WhatTheLogo.png" />
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  touch-action: none;
+  background-color: #000000;
+  color: #ffffff;
+}
 
-    <!-- Манифест PWA -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#000000" />
-  </head>
-  <body class="bg-black text-white m-0 p-0 overflow-hidden select-none">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+}
