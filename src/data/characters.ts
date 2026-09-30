@@ -1,3 +1,12 @@
+export interface CostumeTraits {
+  mainColors: string[];
+  hasHelmetOrMask: boolean;
+  hasCape: boolean;
+  hasBeard: boolean;
+  hasWeapon: boolean;
+  notes: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -5,783 +14,780 @@ export interface Character {
   avatar: string;
   shortDesc: string;
   wiki: string;
+  traits: CostumeTraits;
 }
 
 export const CHARACTERS_DB: Character[] = [
-  // =================== STAR WARS (24 героя) ===================
-  {
-    id: 'darth_vader',
-    name: 'Дарт Вейдер',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1546561892-65bf811416b9?w=400&q=80',
-    shortDesc: 'Лорд ситхов в черной броне, бывший Энакин Скайуокер.',
-    wiki: 'Центральный персонаж саги Звёздные Войны. Могущественный адепт Тёмной стороны Силы, командующий армиями Галактической Империи.'
-  },
-  {
-    id: 'luke_skywalker',
-    name: 'Люк Скайуокер',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&q=80',
-    shortDesc: 'Джедай, разрушитель Звезды Смерти.',
-    wiki: 'Сын Энакина Скайуокера и Падме Амидалы. Магистр-джедай, возродивший Орден после падения Палпатина.'
-  },
-  {
-    id: 'yoda',
-    name: 'Магистр Йода',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=400&q=80',
-    shortDesc: 'Гранд-магистр Ордена джедаев возрастом 900 лет.',
-    wiki: 'Один из сильнейших и мудрейших джедаев в истории. Обучил поколения рыцарей, включая Люка Скайуокера.'
-  },
-  {
-    id: 'obi_wan',
-    name: 'Оби-Ван Кеноби',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=400&q=80',
-    shortDesc: 'Легендарный мастер-джедай, учитель Энакина.',
-    wiki: 'Победил Дарта Мола и генерала Гривуса, пережил Приказ 66 и охранял Люка на Татуине.'
-  },
-  {
-    id: 'han_solo',
-    name: 'Хан Соло',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    shortDesc: 'Контрабандист, капитан корабля «Тысячелетний Сокол».',
-    wiki: 'Герой Восстания, верный напарник Чубакки и муж принцессы Леи.'
-  },
-  {
-    id: 'leia_organa',
-    name: 'Лея Органа',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Принцесса Альдераана, лидер Альянса Повстанцев.',
-    wiki: 'Сестра Люка Скайуокера, чувствительна к Силе. Бесстрашный политик и главнокомандующий Сопротивления.'
-  },
-  {
-    id: 'chewbacca',
-    name: 'Чубакка',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&q=80',
-    shortDesc: 'Преданный вуки, механик и стрелок из арбалета.',
-    wiki: 'Родом с Кашиика. Напарник Хана Соло, участник Войн клонов и Галактической гражданской войны.'
-  },
-  {
-    id: 'boba_fett',
-    name: 'Боба Фетт',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80',
-    shortDesc: 'Лучший охотник за головами в мандалорской броне.',
-    wiki: 'Неизмененный клон Джанго Фетта. Пережил яму Сарлакка и стал криминальным лордом Татуина.'
-  },
-  {
-    id: 'palpatine',
-    name: 'Император Палпатин (Дарт Сидиус)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
-    shortDesc: 'Темный владыка ситхов, создатель Империи.',
-    wiki: 'Уничтожил Республику изнутри, отдал Приказ 66 и переманил Энакина Скайуокера на Тёмную сторону.'
-  },
-  {
-    id: 'mandalorian',
-    name: 'Дин Джарин (Мандалорец)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400&q=80',
-    shortDesc: 'Одинокий стрелок из клана Детей Дозора.',
-    wiki: 'Владелец Тёмного меча, названый отец чувствительного к Силе найденыша Грогу.'
-  },
-  {
-    id: 'grogu',
-    name: 'Грогу (Малыш Йода)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&q=80',
-    shortDesc: 'Чувствительный к Силе малыш той же расы, что и Йода.',
-    wiki: 'Пережил осаду Храма джедаев во время Приказа 66. Стал мандалорским найдёнышем под опекой Дина Джарина.'
-  },
-  {
-    id: 'ahsoka_tano',
-    name: 'Асока Тано',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    shortDesc: 'Бывший падаван Энакина, владеет белыми световыми мечами.',
-    wiki: 'Тогрута, покинувшая Орден джедаев. Была ключевым связным повстанцев под позывным «Фулкрам».'
-  },
-  {
-    id: 'darth_maul',
-    name: 'Дарт Мол',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80',
-    shortDesc: 'Забрак-ситх с двухклинковым красным мечом.',
-    wiki: 'Ученик Сидиуса, убивший Квай-Гона Джинна. Выжил после рассечения пополам и создал криминальный синдикат «Коллектив теней».'
-  },
-  {
-    id: 'mace_windu',
-    name: 'Мейс Винду',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
-    shortDesc: 'Магистр джедаев с фиолетовым мечом, создатель Ваапада.',
-    wiki: 'Второй по статусу джедай после Йоды. Победил Палпатина в честной дуэли до вмешательства Энакина.'
-  },
-  {
-    id: 'kylo_ren',
-    name: 'Кайло Рен (Бен Соло)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80',
-    shortDesc: 'Магистр рыцарей Рен с нестабильным гардовым мечом.',
-    wiki: 'Сын Хана Соло и Леи Органы. Подражал своему деду Дарту Вейдеру и возглавлял Первый Орден.'
-  },
-  {
-    id: 'rey_skywalker',
-    name: 'Рей Скайуокер',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-    shortDesc: 'Мусорщица с Джакку, последняя джедайка.',
-    wiki: 'Внучка Палпатина, отвергшая Тьму. Ученица Люка и Леи, уничтожившая возрожденного императора на Экзеголе.'
-  },
-  {
-    id: 'anakin_skywalker',
-    name: 'Энакин Скайуокер',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80',
-    shortDesc: 'Избранный джедай времен Войн клонов.',
-    wiki: 'Величайший пилот и воин Республики, чьё падение на Тёмную сторону привело к рождению Дарта Вейдера.'
-  },
-  {
-    id: 'general_grievous',
-    name: 'Генерал Гривус',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80',
-    shortDesc: 'Киборг-командующий армией дроидов КНС.',
-    wiki: 'Охотник на джедаев, сражавшийся четырьмя трофейными световыми мечами одновременно.'
-  },
-  {
-    id: 'count_dooku',
-    name: 'Граф Дуку (Дарт Тиранус)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    shortDesc: 'Лидер сепаратистов, мастер стиля Макаши.',
-    wiki: 'Бывший мастер-джедай и учитель Квай-Гона, разочаровавшийся в Республике и ставший ситхом.'
-  },
-  {
-    id: 'padme_amidala',
-    name: 'Падме Амидала',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
-    shortDesc: 'Королева и сенатор Набу, тайная жена Энакина.',
-    wiki: 'Мать Люка и Леи. Политический деятель, до последнего боровшаяся против милитаризации Республики.'
-  },
-  {
-    id: 'qui_gon_jinn',
-    name: 'Квай-Гон Джинн',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
-    shortDesc: 'Серый джедай, открывший Энакина на Татуине.',
-    wiki: 'Учитель Оби-Вана. Первый джедай эпохи заката Республики, постигший тайну сохранения личности в виде Призрака Силы.'
-  },
-  {
-    id: 'lando_calrissian',
-    name: 'Лэндо Калриссиан',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&q=80',
-    shortDesc: 'Барон-администратор Облачного города на Беспине.',
-    wiki: 'Бывший владелец «Тысячелетнего Сокола», ставший генералом Альянса повстанцев во время битвы при Эндоре.'
-  },
-  {
-    id: 'finn',
-    name: 'Финн (FN-2187)',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80',
-    shortDesc: 'Бывший штурмовик Первого Ордена, ставший героем.',
-    wiki: 'Отказался стрелять в мирных жителей, сбежал вместе с По Дэмероном и возглавил наземные силы Сопротивления.'
-  },
-  {
-    id: 'poe_dameron',
-    name: 'По Дэмерон',
-    universe: 'star_wars',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
-    shortDesc: 'Лучший пилот крестокрыла X-Wing в Сопротивлении.',
-    wiki: 'Лидер «Чёрной эскадрильи» и верный друг дроида BB-8, унаследовавший командование Сопротивлением от Леи.'
-  },
-
-  // =================== THE BOYS (24 героя) ===================
-  {
-    id: 'homelander',
-    name: 'Хоумлендер',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80',
-    shortDesc: 'Лидер «Семёрки», психопат со сверхсилами.',
-    wiki: 'Джон Гиллман — сильнейший супергерой корпорации Vought с манией величия, умеющий летать и стрелять лазерами из глаз.'
-  },
-  {
-    id: 'billy_butcher',
-    name: 'Билли Бутчер',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    shortDesc: 'Лидер отряда «Пацаны», ненавидит суперов.',
-    wiki: 'Бывший спецназовец SAS, готовый пожертвовать всем ради мести Хоумлендеру за свою жену.'
-  },
-  {
-    id: 'hughie_campbell',
-    name: 'Хьюи Кэмпбелл',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80',
-    shortDesc: 'Моральный компас отряда Пацанов.',
-    wiki: 'Обычный парень, чью девушку убил Поезд-А. Присоединился к Бутчеру и начал встречаться со Старлайт.'
-  },
-  {
-    id: 'starlight',
-    name: 'Старлайт (Энни)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Излучает свет и управляет электричеством.',
-    wiki: 'Искренняя супергероиня, взбунтовавшаяся против лицемерия Vought и перешедшая в ряды повстанцев.'
-  },
-  {
-    id: 'soldier_boy',
-    name: 'Солдатик',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
-    shortDesc: 'Первый супергерой Америки, радиоактивный танк.',
-    wiki: 'Лидер команды Payback времён Второй мировой. Его ядерный луч лишает суперов способностей навсегда.'
-  },
-  {
-    id: 'a_train',
-    name: 'Поезд-А (Реджи)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    shortDesc: 'Самый быстрый человек на Земле из Семёрки.',
-    wiki: 'Спидстер, погубивший Робин. Впоследствии раскаялся и начал тайно помогать в свержении Хоумлендера.'
-  },
-  {
-    id: 'the_deep',
-    name: 'Подводный (Кевин)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
-    shortDesc: 'Говорит с морскими обитателями, дышит под водой.',
-    wiki: 'Нелепый член Семёрки, постоянно попадающий в унизительные передряги и выполняющий грязную работу Хоумлендера.'
-  },
-  {
-    id: 'black_noir',
-    name: 'Чёрный Нуар',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
-    shortDesc: 'Немой ниндзя-киллер, мастер ближнего боя.',
-    wiki: 'Скрытный член Семёрки с тяжелой травмой мозга после предательства Солдатика в Никарагуа.'
-  },
-  {
-    id: 'queen_maeve',
-    name: 'Королева Мэйв',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-    shortDesc: 'Сильнейшая женщина Земли, воительница Семёрки.',
-    wiki: 'Мэгги Шоу — циничная супергероиня, нашедшая в себе смелость открыто дать отпор Хоумлендеру.'
-  },
-  {
-    id: 'frenchie',
-    name: 'Французик (Серж)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80',
-    shortDesc: 'Химик, оружейник и защитник Кимико.',
-    wiki: 'Эксперт по изобретению способов нейтрализации суперов с темным криминальным прошлым.'
-  },
-  {
-    id: 'kimiko',
-    name: 'Кимико (Самка)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    shortDesc: 'Немая воительница с мгновенной регенерацией.',
-    wiki: 'Жертва экспериментов «Армии Сияющего Света», ставшая преданным и свирепым бойцом Пацанов.'
-  },
-  {
-    id: 'mothers_milk',
-    name: 'Молоко Матери (ММ)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&q=80',
-    shortDesc: 'Мозг и координатор операций Пацанов.',
-    wiki: 'Марвин Т. Милк — бывший военный медик, страдающий ОКР, чей отец погиб в судах против Vought.'
-  },
-  {
-    id: 'victoria_neuman',
-    name: 'Виктория Ньюман',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
-    shortDesc: 'Политик, тайно взрывающая головы взглядом.',
-    wiki: 'Приёмная дочь Стэна Эдгара, пробивавшаяся к посту вице-президента США через тайные расправы.'
-  },
-  {
-    id: 'stormfront',
-    name: 'Штормфронт (Клара)',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&q=80',
-    shortDesc: 'Нацистка из 1940-х, мечет плазменные молнии.',
-    wiki: 'Жена основателя Vought Фредерика Воута, продвигавшая идеи расового превосходства через соцсети.'
-  },
-  {
-    id: 'stan_edgar',
-    name: 'Стэн Эдгар',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
-    shortDesc: 'Генеральный директор корпорации Vought.',
-    wiki: 'Хладнокровный бизнесмен, единственный человек, которого Хоумлендер искренне побаивался без всяких суперсил.'
-  },
-  {
-    id: 'sister_sage',
-    name: 'Сестра Сэйдж',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80',
-    shortDesc: 'Умнейший человек на планете.',
-    wiki: 'Супер с бесконечной регенерацией мозга и абсолютным интеллектом, ставший главным стратегом Хоумлендера.'
-  },
-  {
-    id: 'firecracker',
-    name: 'Петарда',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&q=80',
-    shortDesc: 'Правая стримерша-конспиролог из Семёрки.',
-    wiki: 'Использует искры из пальцев и ультраправую пропаганду ради ненависти к Старлайт.'
-  },
-  {
-    id: 'translucent',
-    name: 'Прозрачный',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80',
-    shortDesc: 'Невидимый супер с углеродно-алмазной кожей.',
-    wiki: 'Первый член Семёрки, ликвидированный Пацанами с помощью детонатора в прямой кишке.'
-  },
-  {
-    id: 'lamplighter',
-    name: 'Фонарщик',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=400&q=80',
-    shortDesc: 'Пирокинетик, бывший член Семёрки.',
-    wiki: 'Сжег внуков полковника Мэллори, после чего был понижен до санитара в психбольнице Vought.'
-  },
-  {
-    id: 'ashley_barrett',
-    name: 'Эшли Барретт',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Глава пиара, а затем гендир Vought на грани нервного срыва.',
-    wiki: 'Постоянно выдергивает волосы от ужаса перед выходками Хоумлендера.'
-  },
-  {
-    id: 'ryan_butcher',
-    name: 'Райан Бутчер',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=400&q=80',
-    shortDesc: 'Биологический сын Хоумлендера и Бекки Бутчер.',
-    wiki: 'Первый супергерой, рожденный с генами сыворотки естественным путем. Разорван между Бутчером и Хоумлендером.'
-  },
-  {
-    id: 'marie_moreau',
-    name: 'Мари Моро',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
-    shortDesc: 'Управляет чужой и своей кровью как оружием.',
-    wiki: 'Студентка Университета Годолкина из спин-оффа «Поколение V», способная взрывать сосуды врагов.'
-  },
-  {
-    id: 'sam_riordan',
-    name: 'Сэм Риордан',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    shortDesc: 'Безумный сверхсильный супер с галлюцинациями кукол.',
-    wiki: 'Узник лаборатории «Лес», обладающий чудовищной силой, превосходящей большинство профессиональных суперов.'
-  },
-  {
-    id: 'cate_dunlap',
-    name: 'Кейт Данлэп',
-    universe: 'the_boys',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    shortDesc: 'Внушает любые команды через касание руки.',
-    wiki: 'Телепат из Годолкина, устроившая бунт суперов против обычных людей.'
-  },
-
-  // =================== MARVEL (24 героя) ===================
+  // ================= MARVEL =================
   {
     id: 'iron_man',
     name: 'Тони Старк (Железный Человек)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1635863138275-d9b33299680b?w=400&q=80',
-    shortDesc: 'Гений в высокотехнологичной броне.',
-    wiki: 'Основатель Мстителей, пожертвовавший собой в битве против Таноса с Камнями Бесконечности.'
+    avatar: '/characters/iron_man.png',
+    shortDesc: 'Броня Mark 85 с нано-реактором.',
+    wiki: 'Тони Старк в боевой нано-броне красно-золотого цвета. Лицо скрыто шлемом, на груди сияет реактор.',
+    traits: {
+      mainColors: ['красный', 'золотой'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Шлем закрывает лицо полностью, глаза светятся белым.'
+    }
   },
   {
     id: 'spider_man',
     name: 'Питер Паркер (Человек-Паук)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1604200213928-ba3cf4fc8436?w=400&q=80',
-    shortDesc: 'Стенолаз с паучьим чутьем из Нью-Йорка.',
-    wiki: 'Борец с преступностью, получивший способности от радиоактивного паука. Живет по правилу ответственности.'
-  },
-  {
-    id: 'thanos',
-    name: 'Танос',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&q=80',
-    shortDesc: 'Безумный Титан, стерший половину вселенной.',
-    wiki: 'Военачальник, собравший Перчатку Бесконечности для баланса космических ресурсов.'
+    avatar: '/characters/spider_man.png',
+    shortDesc: 'Классическое красно-синее трико с паутиной.',
+    wiki: 'Дружелюбный сосед в маске с белыми линзами, скрывающей лицо целиком.',
+    traits: {
+      mainColors: ['красный', 'синий'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Маска надета, лица не видно, узор паутины по ткани.'
+    }
   },
   {
     id: 'captain_america',
     name: 'Стив Роджерс (Капитан Америка)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    shortDesc: 'Первый Мститель с щитом из вибраниума.',
-    wiki: 'Суперсолдат Второй мировой войны, проведший 70 лет во льдах и возглавивший Мстителей.'
+    avatar: '/characters/captain_america.png',
+    shortDesc: 'Темно-синий кевлар со звездой и щитом.',
+    wiki: 'Суперсолдат в шлеме с буквой А (подбородок открыт), в руках держит круглый вибраниумовый щит.',
+    traits: {
+      mainColors: ['синий', 'коричневый'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Лицо видно частично, щит в руке.'
+    }
   },
   {
     id: 'thor',
     name: 'Тор Одинсон',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
-    shortDesc: 'Асгардский бог грома с молотом Мьёльнир.',
-    wiki: 'Сын Одина, повелевающий молниями. Сражался с Хелой, Таносом и Горром Убийцей богов.'
+    avatar: '/characters/thor.png',
+    shortDesc: 'Бог грома в черных латах и красном плаще.',
+    wiki: 'Сын Одина с короткой стрижкой и бородой, вооружен секирой Штормбрейкер.',
+    traits: {
+      mainColors: ['черный', 'красный'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: true,
+      hasWeapon: true,
+      notes: 'Лицо открыто, русая борода, секира в руке, красный плащ за спиной.'
+    }
   },
   {
     id: 'hulk',
     name: 'Брюс Бэннер (Халк)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80',
-    shortDesc: 'Зеленый монстр невероятной гамма-силы.',
-    wiki: 'Ученый-физик, превращающийся в неостановимого гиганта во время приступов ярости.'
+    avatar: '/characters/hulk.png',
+    shortDesc: 'Зеленый мускулистый гигант.',
+    wiki: 'Халк с обнаженным торсом в порванных темных штанах. Зеленая кожа и черные волосы.',
+    traits: {
+      mainColors: ['зеленый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Голый торс, без шлема и оружия.'
+    }
   },
   {
-    id: 'doctor_strange',
-    name: 'Доктор Стрэндж',
+    id: 'thanos',
+    name: 'Танос',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    shortDesc: 'Верховный чародей Земли, хранитель Мультивселенной.',
-    wiki: 'Бывший нейрохирург, обучившийся мистическим искусствам в Камар-Тадже после автокатастрофы.'
-  },
-  {
-    id: 'wolverine',
-    name: 'Логан (Росомаха)',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80',
-    shortDesc: 'Мутант с адамантиевым скелетом и когтями.',
-    wiki: 'Член Людей Икс с мощнейшим исцеляющим фактором и звериными инстинктами.'
-  },
-  {
-    id: 'deadpool',
-    name: 'Уэйд Уилсон (Дэдпул)',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80',
-    shortDesc: 'Болтливый наемник, ломающий четвертую стену.',
-    wiki: 'Бессмертный убийца с катанами и черным юмором, знающий, что находится внутри комикса и фильма.'
+    avatar: '/characters/thanos.png',
+    shortDesc: 'Безумный Титан в золотом доспехе.',
+    wiki: 'Фиолетовый гигант в золотом шлеме и кирасе, на левой руке надета Перчатка Бесконечности.',
+    traits: {
+      mainColors: ['золотой', 'фиолетовый'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Золотой шлем на голове, перчатка с камнями.'
+    }
   },
   {
     id: 'loki',
     name: 'Локи Лафейсон',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
-    shortDesc: 'Бог обмана и историй, хранитель нитей времени.',
-    wiki: 'Брат Тора, прошедший путь от захватчика Нью-Йорка до хранителя всего древа Мультивселенной.'
+    avatar: '/characters/loki.png',
+    shortDesc: 'Бог обмана в зеленой мантии с рогатым шлемом.',
+    wiki: 'Асгардский трикстер в шлеме с двумя большими золотыми рогами и зеленым плащом.',
+    traits: {
+      mainColors: ['зеленый', 'золотой'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Длинные черные волосы, два загнутых рога на шлеме.'
+    }
+  },
+  {
+    id: 'doctor_strange',
+    name: 'Стивен Стрэндж',
+    universe: 'marvel',
+    avatar: '/characters/doctor_strange.png',
+    shortDesc: 'Синяя туника мага и красный Плащ Левитации.',
+    wiki: 'Верховный маг Земли с седыми висками и амулетом Глаз Агамотто на шее.',
+    traits: {
+      mainColors: ['синий', 'красный'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: true,
+      hasWeapon: false,
+      notes: 'Лицо открыто, аккуратная бородка, высокий воротник плаща.'
+    }
   },
   {
     id: 'black_widow',
-    name: 'Наташа Романофф (Черная Вдова)',
+    name: 'Наташа Романофф',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Шпионка высшего класса из Красной Комнаты.',
-    wiki: 'Мастер рукопашного боя и скрытных операций, отдавшая жизнь на Вормире за Камень Души.'
+    avatar: '/characters/black_widow.png',
+    shortDesc: 'Черный тактический комбинезон шпионки.',
+    wiki: 'Черная Вдова в облегающем костюме на молнии с рыжими волосами и кобурами на бедрах.',
+    traits: {
+      mainColors: ['черный'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Женщина, рыжие волосы, пистолеты в кобурах.'
+    }
   },
   {
     id: 'scarlet_witch',
     name: 'Ванда Максимофф (Алая Ведьма)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-    shortDesc: 'Владеет Магией Хаоса, способна менять реальность.',
-    wiki: 'Могущественная чародейка, подчинившая Даркхолд и создавшая аномалию Вествью.'
+    avatar: '/characters/scarlet_witch.png',
+    shortDesc: 'Бордовый корсет и алая корона.',
+    wiki: 'Ванда в темно-красном костюме с заостренной тиарой на голове и светящимися ладонями.',
+    traits: {
+      mainColors: ['красный', 'черный'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Алая корона на голове, длинные распущенные волосы.'
+    }
+  },
+  {
+    id: 'wolverine',
+    name: 'Логан (Росомаха)',
+    universe: 'marvel',
+    avatar: '/characters/wolverine.png',
+    shortDesc: 'Желто-синий костюм с маской и когтями.',
+    wiki: 'Мутант в знаменитой желтой форме с черными ушами на маске и стальными когтями из кулаков.',
+    traits: {
+      mainColors: ['желтый', 'синий'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Маска с большими ушами, когти выпущены.'
+    }
+  },
+  {
+    id: 'deadpool',
+    name: 'Уэйд Уилсон (Дэдпул)',
+    universe: 'marvel',
+    avatar: '/characters/deadpool.png',
+    shortDesc: 'Красно-черное трико с катанами за спиной.',
+    wiki: 'Наемник в глухой красно-черной маске с рукоятями мечей, торчащими из-за спины.',
+    traits: {
+      mainColors: ['красный', 'черный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Лицо скрыто наглухо, мечи за плечами.'
+    }
   },
   {
     id: 'black_panther',
     name: 'Т’Чалла (Черная Пантера)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&q=80',
-    shortDesc: 'Король Ваканды под защитой богини Баст.',
-    wiki: 'Правитель скрытой африканской нации, использующий технологии вибраниума и силу Сердцевидной травы.'
-  },
-  {
-    id: 'ant_man',
-    name: 'Скотт Лэнг (Человек-Муравей)',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80',
-    shortDesc: 'Уменьшается и увеличивается благодаря частицам Пима.',
-    wiki: 'Вор-рецидивист, ставший героем и открывший способ путешествий во времени через Квантовый мир.'
+    avatar: '/characters/black_panther.png',
+    shortDesc: 'Черный комбинезон из вибраниума с маской пантеры.',
+    wiki: 'Король Ваканды в монолитно-черной броне с ушками на шлеме и серебряным колье-когтями.',
+    traits: {
+      mainColors: ['черный', 'серебряный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Черная маска с ушками кошки, лицо полностью скрыто.'
+    }
   },
   {
     id: 'star_lord',
     name: 'Питер Квилл (Звёздный Лорд)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80',
-    shortDesc: 'Капитан Стражей Галактики с плеером кассет.',
-    wiki: 'Сын целестиала Эго, похищенный Опустошителями с Земли в детстве.'
-  },
-  {
-    id: 'gamora',
-    name: 'Гамора',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    shortDesc: 'Самая опасная женщина в Галактике, дочь Таноса.',
-    wiki: 'Мастер холодного оружия, предавшая безумного отца и присоединившаяся к Стражам.'
+    avatar: '/characters/star_lord.png',
+    shortDesc: 'Бордовая куртка и маска с красными окулярами.',
+    wiki: 'Лидер Стражей Галактики в кожаном плаще и высокотехнологичном шлеме-респираторе.',
+    traits: {
+      mainColors: ['коричневый', 'красный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Маска со светящимися красными линзами.'
+    }
   },
   {
     id: 'groot',
     name: 'Грут',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&q=80',
-    shortDesc: 'Древоподобный гуманоид колоссальной мощи.',
-    wiki: 'Член Стражей Галактики, говорящий лишь фразу «Я есть Грут», верный друг Ракеты.'
-  },
-  {
-    id: 'rocket_raccoon',
-    name: 'Ракета',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&q=80',
-    shortDesc: 'Генетически модифицированный енот-киборг с пушками.',
-    wiki: 'Гениальный инженер и тактик, результат жестоких экспериментов Высшего Эволюционера.'
-  },
-  {
-    id: 'daredevil',
-    name: 'Мэтт Мёрдок (Сорвиголова)',
-    universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
-    shortDesc: 'Слепой адвокат и линчеватель Адской Кухни.',
-    wiki: 'Потерял зрение от токсичных отходов, развив эхолокацию и сверхчеловеческие чувства.'
+    avatar: '/characters/groot.png',
+    shortDesc: 'Древовидный великан из коры и веток.',
+    wiki: 'Существо из живого дерева с зелеными побегами на плечах, одежды не носит.',
+    traits: {
+      mainColors: ['коричневый', 'зеленый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Полностью древесное тело без одежды.'
+    }
   },
   {
     id: 'hawkeye',
-    name: 'Клинт Бартон (Соколиный Глаз)',
+    name: 'Клинт Бартон',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=400&q=80',
-    shortDesc: 'Мастер стрельбы из лука со стрелами-гаджетами.',
-    wiki: 'Снайпер Щ.И.Т.а и бессменный член первоначального состава Мстителей.'
+    avatar: '/characters/hawkeye.png',
+    shortDesc: 'Темно-фиолетовый жилет лучника с колчаном.',
+    wiki: 'Меткий стрелок без маски с блочным луком в руках и стрелами за спиной.',
+    traits: {
+      mainColors: ['черный', 'фиолетовый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Лицо открыто, лук со стрелами в руках.'
+    }
+  },
+  {
+    id: 'ant_man',
+    name: 'Скотт Лэнг (Человек-Муравей)',
+    universe: 'marvel',
+    avatar: '/characters/ant_man.png',
+    shortDesc: 'Черно-красный костюм со стальным шлемом.',
+    wiki: 'Герой в закрытом металлическом шлеме с респиратором и красными окулярами.',
+    traits: {
+      mainColors: ['красный', 'черный', 'серебряный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Шлем закрывает голову целиком.'
+    }
   },
   {
     id: 'winter_soldier',
-    name: 'Баки Барнс (Зимний Солдат)',
+    name: 'Баки Барнс',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
-    shortDesc: 'Убийца с кибернетической рукой из Гидры.',
-    wiki: 'Лучший друг Стива Роджерса, превращенный советской программой в тайного ассасина.'
+    avatar: '/characters/winter_soldier.png',
+    shortDesc: 'Тактический жилет и хромированная кибер-рука.',
+    wiki: 'Боец с длинными волосами до плеч, левая рука полностью железная со звездой.',
+    traits: {
+      mainColors: ['черный', 'серебряный'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: true,
+      hasWeapon: true,
+      notes: 'Лицо открыто, блестящая металлическая рука.'
+    }
   },
   {
     id: 'vision',
     name: 'Вижн',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=400&q=80',
-    shortDesc: 'Синтезоид из вибраниума с Камнем Разума во лбу.',
-    wiki: 'Создан Альтроном, обрел самосознание благодаря Джарвису и полюбил Ванду.'
+    avatar: '/characters/vision.png',
+    shortDesc: 'Красное лицо, зеленый костюм и желтый плащ.',
+    wiki: 'Синтезоид с желтым Камнем Разума во лбу и золотистой мантией за спиной.',
+    traits: {
+      mainColors: ['зеленый', 'красный', 'желтый'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Красная кожа лица, камень во лбу, длинный плащ.'
+    }
+  },
+  {
+    id: 'captain_marvel',
+    name: 'Кэрол Дэнверс',
+    universe: 'marvel',
+    avatar: '/characters/captain_marvel.png',
+    shortDesc: 'Красно-синий костюм с золотой звездой.',
+    wiki: 'Супергероиня со светлыми волосами, без шлема, на груди сияет золотая восьмиконечная звезда.',
+    traits: {
+      mainColors: ['синий', 'красный', 'золотой'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Женщина, светлые волосы, открытое лицо.'
+    }
+  },
+  {
+    id: 'magneto',
+    name: 'Эрик Леншерр (Магнето)',
+    universe: 'marvel',
+    avatar: '/characters/magneto.png',
+    shortDesc: 'Темно-красный шлем и фиолетовый плащ.',
+    wiki: 'Повелитель магнетизма в шлеме с вырезом под лицо и металлическим воротником.',
+    traits: {
+      mainColors: ['красный', 'фиолетовый'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Шлем закрывает лоб и щеки, седые брови, плащ.'
+    }
   },
   {
     id: 'green_goblin',
     name: 'Норман Озборн (Зеленый Гоблин)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80',
-    shortDesc: 'Психопат на глайдере с тыквенными бомбами.',
-    wiki: 'Главный враг Человека-Паука, сошедший с ума от сыворотки усиления компании Oscorp.'
+    avatar: '/characters/green_goblin.png',
+    shortDesc: 'Зеленая чешуйчатая броня и оскаленная маска.',
+    wiki: 'Злодей в остроконечном зеленом шлеме с желтыми линзами глаз и тыквенной бомбой.',
+    traits: {
+      mainColors: ['зеленый', 'желтый'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Зеленый шлем-маска с зубастым оскалом, бомба в руке.'
+    }
   },
   {
-    id: 'captain_marvel',
-    name: 'Кэрол Дэнверс (Капитан Марвел)',
+    id: 'daredevil',
+    name: 'Мэтт Мёрдок (Сорвиголова)',
     universe: 'marvel',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
-    shortDesc: 'Космическая воительница с энергией Тессеракта.',
-    wiki: 'Пилот ВВС США, получившая фотонные силы и защищающая отдаленные миры Галактики.'
+    avatar: '/characters/daredevil.png',
+    shortDesc: 'Бордовый костюм с дьявольскими рожками.',
+    wiki: 'Слепой защитник в маске с маленькими рожками на лбу и красными стеклами на глазах.',
+    traits: {
+      mainColors: ['красный', 'черный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Рожки на шлеме, палочки-дубинки в руках.'
+    }
+  },
+  {
+    id: 'ikaris',
+    name: 'Икарис',
+    universe: 'marvel',
+    avatar: '/characters/ikaris.png',
+    shortDesc: 'Синий костюм Вечного с золотыми кругами.',
+    wiki: 'Лидер Вечных в сине-голубом облачении с золотым узором, глаза светятся космическим лазером.',
+    traits: {
+      mainColors: ['синий', 'золотой'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Открытое лицо, светящиеся глаза лазером.'
+    }
   },
 
-  // =================== INVINCIBLE (24 героя) ===================
+  // ================= STAR WARS =================
   {
-    id: 'omni_man',
-    name: 'Омни-Мэн (Нолан Грейсон)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80',
-    shortDesc: 'Вилтрумитский завоеватель, сильнейший боец Земли.',
-    wiki: 'Отец Марка. Был заслан империей Вилтрум для подготовки колонизации планеты.'
+    id: 'darth_vader',
+    name: 'Дарт Вейдер',
+    universe: 'star_wars',
+    avatar: '/characters/darth_vader.png',
+    shortDesc: 'Черная глянцевая броня ситха с респиратором.',
+    wiki: 'Повелитель ситхов в черном шлеме, мантии, с панелью жизнеобеспечения на груди и красным мечом.',
+    traits: {
+      mainColors: ['черный'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Лицо полностью скрыто респиратором, красный световой меч.'
+    }
   },
   {
-    id: 'invincible_mark',
-    name: 'Неуязвимый (Марк Грейсон)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&q=80',
-    shortDesc: 'Сын Омни-Мэна, защитник Земли.',
-    wiki: 'Полувилтрумит, отказавшийся покорять планету и бросивший вызов собственному отцу.'
+    id: 'luke_skywalker',
+    name: 'Люк Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/luke_skywalker.png',
+    shortDesc: 'Черный джедайский костюм и зеленый меч.',
+    wiki: 'Люк образца Возвращения Джедая: черная туника, перчатка на правой руке, зеленый клинок.',
+    traits: {
+      mainColors: ['черный'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Светлые волосы, без шлема, зеленый световой меч.'
+    }
   },
   {
-    id: 'atom_eve',
-    name: 'Атомная Ева (Саманта)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Управляет молекулярной структурой любой материи.',
-    wiki: 'Создана в правительственной лаборатории. Любовь Марка Грейсона и могущественный союзник.'
+    id: 'yoda',
+    name: 'Магистр Йода',
+    universe: 'star_wars',
+    avatar: '/characters/yoda.png',
+    shortDesc: 'Зеленый пришелец в бежевой мантии с тростью.',
+    wiki: 'Гранд-магистр с длинными заостренными ушами, седыми прядями и коричневой туникой.',
+    traits: {
+      mainColors: ['зеленый', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Маленький зеленый старец с большими ушами, деревянная палка.'
+    }
   },
   {
-    id: 'allen_alien',
-    name: 'Аллен Пришелец',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=400&q=80',
-    shortDesc: 'Унопианец-чемпион Коалиции Планет.',
-    wiki: 'Генетически выведен для борьбы с вилтрумитами. Становится сильнее после каждого смертельного ранения.'
+    id: 'obi_wan',
+    name: 'Оби-Ван Кеноби',
+    universe: 'star_wars',
+    avatar: '/characters/obi_wan.png',
+    shortDesc: 'Бежевая роба джедая и синий световой меч.',
+    wiki: 'Мастер-джедай с рыжевато-русой бородой, открытым лицом и синим клинком Силы.',
+    traits: {
+      mainColors: ['бежевый', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: true,
+      hasWeapon: true,
+      notes: 'Рыжая борода, светлая туника, синий меч.'
+    }
   },
   {
-    id: 'robot',
-    name: 'Робот (Руди Коннорс)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1635863138275-d9b33299680b?w=400&q=80',
-    shortDesc: 'Гениальный стратег в бронированном дроне.',
-    wiki: 'Физически деформированный гений, клонировавший тело Рекса Сплоуда и захвативший мир ради идеального порядка.'
+    id: 'han_solo',
+    name: 'Хан Соло',
+    universe: 'star_wars',
+    avatar: '/characters/han_solo.png',
+    shortDesc: 'Белая рубаха, черная жилетка и бластер.',
+    wiki: 'Контрабандист в расстегнутой рубахе, черном жилете и с пистолетом-бластером DL-44.',
+    traits: {
+      mainColors: ['белый', 'черный', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Черная жилетка, кобура на бедре, бластер в руке.'
+    }
   },
   {
-    id: 'monster_girl',
-    name: 'Девочка-Монстр (Аманда)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&q=80',
-    shortDesc: 'Превращается в тролля, молодея с каждой мутацией.',
-    wiki: 'Проклята демоном. Выглядит как ребенок, хотя ее реальный возраст перевалил за 30 лет.'
+    id: 'leia_organa',
+    name: 'Принцесса Лея',
+    universe: 'star_wars',
+    avatar: '/characters/leia_organa.png',
+    shortDesc: 'Белое струящееся платье и прическа-бублики.',
+    wiki: 'Принцесса Альдераана в длинном белом платье с серебряным поясом и двумя круглыми пучками волос.',
+    traits: {
+      mainColors: ['белый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Женщина в белом платье, знаменитая прическа «булочки» по бокам.'
+    }
   },
   {
-    id: 'battle_beast',
-    name: 'Боевой Зверь (Терок)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80',
-    shortDesc: 'Инопланетный гладиатор, ищущий славную смерть.',
-    wiki: 'Антропоморфный лев невероятной мощи, способный в одиночку сражаться с сильнейшими воинами Вилтрума.'
+    id: 'chewbacca',
+    name: 'Чубакка',
+    universe: 'star_wars',
+    avatar: '/characters/chewbacca.png',
+    shortDesc: 'Мохнатый вуки с кожаным патронташем.',
+    wiki: 'Высокий вуки, целиком покрытый коричневой шерстью, с серебристым арбалетом-бластером.',
+    traits: {
+      mainColors: ['коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Всё тело в шерсти, ремень через плечо, тяжелый арбалет.'
+    }
   },
   {
-    id: 'cecil_stedman',
-    name: 'Сесил Стедман',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80',
-    shortDesc: 'Директор Агентства Глобальной Обороны.',
-    wiki: 'Мастер телепортаций и тайных сделок, готовый на любые аморальные решения ради безопасности человечества.'
+    id: 'boba_fett',
+    name: 'Боба Фетт',
+    universe: 'star_wars',
+    avatar: '/characters/boba_fett.png',
+    shortDesc: 'Зеленый мандалорский шлем с Т-визором.',
+    wiki: 'Охотник за головами в поцарапанной зеленой броне, желтых наплечниках и ранцем за спиной.',
+    traits: {
+      mainColors: ['зеленый', 'желтый', 'серый'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Шлем мандалорца с дальномером, лицо скрыто.'
+    }
   },
   {
-    id: 'the_immortal',
-    name: 'Бессмертный',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    shortDesc: 'Лидер Стражей Земного Шара, бывший Авраам Линкольн.',
-    wiki: 'Живет тысячи лет, воскресая при соединении головы с телом. Люто ненавидит Омни-Мэна.'
+    id: 'palpatine',
+    name: 'Император Палпатин',
+    universe: 'star_wars',
+    avatar: '/characters/palpatine.png',
+    shortDesc: 'Черный балахон и синие молнии из рук.',
+    wiki: 'Морщинистый владыка ситхов в глубоком черном капюшоне, стреляющий молниями из пальцев.',
+    traits: {
+      mainColors: ['черный'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Черный капюшон скрывает лоб, бледное лицо, желтые глаза.'
+    }
   },
   {
-    id: 'rex_splode',
-    name: 'Рекс Сплоуд',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
-    shortDesc: 'Заряжает кинетической взрывной энергией любые предметы.',
-    wiki: 'Воспитан правительством как живое оружие. Вспыльчивый герой, отдавший жизнь в войне с Непобедимыми.'
+    id: 'mandalorian',
+    name: 'Дин Джарин (Мандалорец)',
+    universe: 'star_wars',
+    avatar: '/characters/mandalorian.png',
+    shortDesc: 'Зеркальная броня из чистого бескара.',
+    wiki: 'Воин в серебристом металлическом шлеме, глухом визоре и коричневом плаще.',
+    traits: {
+      mainColors: ['серебряный', 'серый'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Блестящий хромированный шлем без лица.'
+    }
   },
   {
-    id: 'angstrom_levy',
-    name: 'Ангстром Леви',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80',
-    shortDesc: 'Путешественник по Мультивселенной с гигантским мозгом.',
-    wiki: 'Винит Марка Грейсона в своей мутации и посвятил жизнь мести Неуязвимому во всех измерениях.'
+    id: 'grogu',
+    name: 'Грогу (Малыш)',
+    universe: 'star_wars',
+    avatar: '/characters/grogu.png',
+    shortDesc: 'Крошечный зеленый малыш в бежевой робе.',
+    wiki: 'Зеленый найденыш с гигантскими глазами и длинными ушами в теплой просторной кофте.',
+    traits: {
+      mainColors: ['зеленый', 'бежевый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: false,
+      notes: 'Крохотный размер, длинные уши, темные глаза.'
+    }
   },
   {
-    id: 'conquest',
-    name: 'Завоеватель',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=400&q=80',
-    shortDesc: 'Одноглазый вилтрумитский палач империи.',
-    wiki: 'Самый жестокий ветеран Вилтрума, получающий физическое наслаждение от кровопролитных сражений.'
+    id: 'ahsoka_tano',
+    name: 'Асока Тано',
+    universe: 'star_wars',
+    avatar: '/characters/ahsoka_tano.png',
+    shortDesc: 'Оранжевая кожа, бело-синие лекку и белые мечи.',
+    wiki: 'Тогрута с полосатыми отростками на голове, белыми узорами на лице и двумя белыми мечами.',
+    traits: {
+      mainColors: ['оранжевый', 'синий', 'белый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Оранжевое лицо, длинные полосатые отростки вместо волос.'
+    }
   },
   {
-    id: 'thragg',
-    name: 'Великий Регент Трагг',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&q=80',
-    shortDesc: 'Абсолютный правитель империи Вилтрум.',
-    wiki: 'Тысячелетиями тренировался быть непобедимым воином. Сильнейшее существо во всей вселенной Invincible.'
+    id: 'darth_maul',
+    name: 'Дарт Мол',
+    universe: 'star_wars',
+    avatar: '/characters/darth_maul.png',
+    shortDesc: 'Красно-черные татуировки, рога и двойной меч.',
+    wiki: 'Забрак с рожками на черепе, раскрашенным лицом и двухсторонним красным световым клинком.',
+    traits: {
+      mainColors: ['красный', 'черный'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Красное лицо с черными узорами, маленькие рожки.'
+    }
   },
   {
-    id: 'dupli_kate',
-    name: 'Дупли-Кейт',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-    shortDesc: 'Создает бесконечное количество собственных клонов.',
-    wiki: 'Член Стражей Земного Шара. Ее оригинальное нулевое тело скрывается в тайном бункере.'
+    id: 'mace_windu',
+    name: 'Мейс Винду',
+    universe: 'star_wars',
+    avatar: '/characters/mace_windu.png',
+    shortDesc: 'Светлая туника джедая и фиолетовый меч.',
+    wiki: 'Лысый магистр Ордена в традиционной светлой робе с ярким фиолетовым световым мечом.',
+    traits: {
+      mainColors: ['бежевый', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Лысая голова, открытое лицо, фиолетовый световой меч.'
+    }
   },
   {
-    id: 'anissa',
-    name: 'Анисса',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
-    shortDesc: 'Вилтрумитская воительница-инспектор.',
-    wiki: 'Была послана проверить лояльность Марка Грейсона империей, обладает чудовищной разрушительной мощью.'
+    id: 'kylo_ren',
+    name: 'Кайло Рен',
+    universe: 'star_wars',
+    avatar: '/characters/kylo_ren.png',
+    shortDesc: 'Черная маска с серебром и меч с гардой.',
+    wiki: 'Рыцарь Рен в черном капюшоне, маске с серебряными линиями и крестообразным красным мечом.',
+    traits: {
+      mainColors: ['черный', 'серебряный'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Черная маска закрывает лицо, меч с боковыми зубьями.'
+    }
   },
   {
-    id: 'bulletproof',
-    name: 'Пуленепробиваемый (Зандер)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80',
-    shortDesc: 'Поглощает кинетическую энергию ударов.',
-    wiki: 'Второй человек, носивший желто-синий костюм Неуязвимого во время болезни Марка.'
+    id: 'rey_skywalker',
+    name: 'Рей Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/rey_skywalker.png',
+    shortDesc: 'Светлые льняные повязки мусорщицы.',
+    wiki: 'Джедайка с тремя пучками на затылке, светлыми тканевыми полосами на теле и синим мечом.',
+    traits: {
+      mainColors: ['белый', 'серый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Женщина, прическа из трех узелков, световой меч.'
+    }
   },
   {
-    id: 'damien_darkblood',
-    name: 'Дэмиен Даркблад',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80',
-    shortDesc: 'Демон-детектив, расследующий преступления.',
-    wiki: 'Сбежал из Ада, чтобы вершить правосудие. Первым раскрыл тайну гибели оригинальных Стражей Земного Шара.'
+    id: 'anakin_skywalker',
+    name: 'Энакин Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/anakin_skywalker.png',
+    shortDesc: 'Темно-коричневая кожаная туника со шрамом.',
+    wiki: 'Энакин из «Мести ситхов»: вьющиеся волосы, шрам на правом глазу, синий световой меч.',
+    traits: {
+      mainColors: ['черный', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Шрам у правого глаза, волосы до плеч, синий меч.'
+    }
   },
   {
-    id: 'doc_seismic',
-    name: 'Док Сейсмик',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1608889175123-8ee362201f81?w=400&q=80',
-    shortDesc: 'Безумный геолог, управляющий землетрясениями и лавой.',
-    wiki: 'Создатель сейсмических перчаток, подчинивший подземную расу лавовых существ магманитов.'
+    id: 'general_grievous',
+    name: 'Генерал Гривус',
+    universe: 'star_wars',
+    avatar: '/characters/general_grievous.png',
+    shortDesc: 'Белый скелет-киборг с четырьмя мечами.',
+    wiki: 'Командующий дроидов с белой маской-черепом, четырьмя руками и зелеными/синими мечами.',
+    traits: {
+      mainColors: ['белый', 'серый'],
+      hasHelmetOrMask: true,
+      hasCape: true,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Киборг с 4 руками, держит сразу 4 световых меча.'
+    }
   },
   {
-    id: 'red_rush',
-    name: 'Красная Ракета (Red Rush)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1514539079130-25950c84af65?w=400&q=80',
-    shortDesc: 'Русский спидстер, оригинальный Страж Земного Шара.',
-    wiki: 'Погиб от рук Омни-Мэна, разбив свои руки о его неуязвимый череп на гиперскорости.'
+    id: 'count_dooku',
+    name: 'Граф Дуку',
+    universe: 'star_wars',
+    avatar: '/characters/count_dooku.png',
+    shortDesc: 'Коричневый плащ с цепочкой и изогнутый меч.',
+    wiki: 'Лорд Тиранус с благородной сединой, аккуратной бородой и мечом с изогнутой рукоятью.',
+    traits: {
+      mainColors: ['коричневый', 'черный'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: true,
+      hasWeapon: true,
+      notes: 'Седые волосы и бородка, изогнутый красный световой меч.'
+    }
   },
   {
-    id: 'war_woman',
-    name: 'Воительница (War Woman)',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&q=80',
-    shortDesc: 'Античная амазонка с боевой булавой.',
-    wiki: 'Могучая воительница из древнего племени женщин, сооснователь первого состава Стражей.'
+    id: 'padme_amidala',
+    name: 'Падме Амидала',
+    universe: 'star_wars',
+    avatar: '/characters/padme_amidala.png',
+    shortDesc: 'Белый облегающий костюм с бластером.',
+    wiki: 'Сенатор Набу на арене Джеонозиса: белый костюм с открытым животом и пистолетом в руке.',
+    traits: {
+      mainColors: ['белый'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Женщина, темные волосы в хвосте, белый костюм.'
+    }
   },
   {
-    id: 'darkwing',
-    name: 'Темнокрыл',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1546561892-65bf811416b9?w=400&q=80',
-    shortDesc: 'Детектив Полуночного города с теневым арсеналом.',
-    wiki: 'Аналог Бэтмена, погибший в схватке со взбесившимся Ноланом Грейсоном.'
+    id: 'qui_gon_jinn',
+    name: 'Квай-Гон Джинн',
+    universe: 'star_wars',
+    avatar: '/characters/qui_gon_jinn.png',
+    shortDesc: 'Просторная туника джедая и длинные волосы.',
+    wiki: 'Учитель Оби-Вана с длинными каштановыми волосами, аккуратной бородой и зеленым клинком.',
+    traits: {
+      mainColors: ['бежевый', 'коричневый'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: true,
+      hasWeapon: true,
+      notes: 'Длинные волосы назад, борода, зеленый световой меч.'
+    }
   },
   {
-    id: 'aquarus',
-    name: 'Акварус',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=400&q=80',
-    shortDesc: 'Король подводного царства Атлантиды.',
-    wiki: 'Рыбоподобный владыка морей, стреляющий гидрокинетическими струями высокого давления.'
+    id: 'lando_calrissian',
+    name: 'Лэндо Калриссиан',
+    universe: 'star_wars',
+    avatar: '/characters/lando_calrissian.png',
+    shortDesc: 'Синяя рубашка и стильный плащ с золотом.',
+    wiki: 'Барон Облачного города в синем костюме с атласным плащом и аккуратными усами.',
+    traits: {
+      mainColors: ['синий', 'золотой'],
+      hasHelmetOrMask: false,
+      hasCape: true,
+      hasBeard: true,
+      hasWeapon: false,
+      notes: 'Пышные усы, сине-золотой плащ.'
+    }
   },
   {
-    id: 'green_ghost',
-    name: 'Зеленый Призрак',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    shortDesc: 'Проходит сквозь любые препятствия через фазирование.',
-    wiki: 'Фотограф, нашедшая зеленый внеземной нефрит, дарующий неосязаемость.'
+    id: 'finn',
+    name: 'Финн (FN-2187)',
+    universe: 'star_wars',
+    avatar: '/characters/finn.png',
+    shortDesc: 'Коричневая кожаная куртка с красной полосой.',
+    wiki: 'Бывший штурмовик в куртке По Дэмерона и темной футболке с бластером в руках.',
+    traits: {
+      mainColors: ['коричневый', 'черный'],
+      hasHelmetOrMask: false,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Короткая стрижка, кожаная куртка с красными вставками.'
+    }
   },
   {
-    id: 'martian_man',
-    name: 'Марсианин',
-    universe: 'invincible',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80',
-    shortDesc: 'Инопланетный беженец, меняющий форму тела.',
-    wiki: 'Сбежал с Марса от рабства секвиддов, растягивал свое тело в щиты и жгуты.'
+    id: 'stormtrooper',
+    name: 'Имперский Штурмовик',
+    universe: 'star_wars',
+    avatar: '/characters/stormtrooper.png',
+    shortDesc: 'Белая составная пластиковая броня и шлем.',
+    wiki: 'Солдат Империи в чисто-белой кирасе, закрытом белом шлеме и с черным карабином E-11.',
+    traits: {
+      mainColors: ['белый', 'черный'],
+      hasHelmetOrMask: true,
+      hasCape: false,
+      hasBeard: false,
+      hasWeapon: true,
+      notes: 'Белый шлем с черной полосой над визором, лица не видно.'
+    }
   }
 ];
 
