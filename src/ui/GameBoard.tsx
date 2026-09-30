@@ -55,7 +55,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
       setTimeout(() => {
         setMessages(prev => [
           ...prev, 
-          { sender: 'opponent', text: 'Да. Мой вопрос: на твоем герое надет шлем или маска?' }
+          { sender: 'opponent', text: 'Да. Мой вопрос: на твоем персонаже надет шлем или маска?' }
         ]);
         setIsMyTurn(true);
       }, 1400);
@@ -65,43 +65,43 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
       
-      {/* Верхний бар с безопасным отступом сверху */}
-      <div className="w-full pt-[max(env(safe-area-inset-top),16px)] pb-2 px-3 bg-black/80 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between">
+      {/* 1. ВЕРХНИЙ БАР */}
+      <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0">
         {isConfirmed && selectedChar ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <img 
               src={selectedChar.avatar} 
               alt={selectedChar.name} 
-              className="w-9 h-9 object-cover border border-white"
+              className="w-8 h-8 object-cover border border-white"
             />
             <div className="flex flex-col">
-              <span className="text-[9px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
-              <span className="text-xs font-bold leading-tight truncate max-w-[150px]">{selectedChar.name}</span>
+              <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
+              <span className="text-[11px] font-bold leading-tight truncate max-w-[160px]">{selectedChar.name}</span>
             </div>
             <button 
               onClick={() => setInfoChar(selectedChar)}
               className="w-6 h-6 bg-white/20 border border-white/30 flex items-center justify-center active:bg-white active:text-black ml-1"
             >
-              <Info size={12} />
+              <Info size={11} />
             </button>
           </div>
         ) : (
-          <span className="text-xs font-black uppercase tracking-wider text-neutral-300">
-            Выберите своего персонажа
+          <span className="text-[11px] font-black uppercase tracking-wider text-neutral-300">
+            {selectedChar ? 'Нажмите «Подтвердить» внизу' : 'Выберите персонажа на поле:'}
           </span>
         )}
 
         <button 
           onClick={onBackToMenu}
-          className="p-2 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+          className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
         >
-          <LogOut size={14} />
+          <LogOut size={13} />
         </button>
       </div>
 
-      {/* Игровое поле: 24 СТРОГИХ КВАДРАТА (aspect-square) */}
-      <div className={`w-full flex-1 px-2 py-1 flex items-center justify-center overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
-        <div className="w-full grid grid-cols-4 gap-1.5 max-w-sm place-content-center">
+      {/* 2. ИГРОВОЕ ПОЛЕ 6 НА 6 (36 КВАДРАТОВ) */}
+      <div className={`w-full flex-1 px-1.5 py-1 flex items-center justify-center min-h-0 overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
+        <div className="w-full grid grid-cols-6 gap-1 max-w-sm place-content-center">
           {characters.map(char => {
             const isEliminated = eliminatedIds.includes(char.id);
             const isCurrentSelected = selectedChar?.id === char.id;
@@ -114,9 +114,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                 onTouchEnd={handleTouchEnd}
                 onMouseDown={() => handleTouchStart(char)}
                 onMouseUp={handleTouchEnd}
-                className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-1 overflow-hidden ${
+                className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-0.5 overflow-hidden ${
                   !isConfirmed && isCurrentSelected
-                    ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_15px_white]'
+                    ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_12px_white] z-10'
                     : isEliminated
                     ? 'opacity-20 grayscale border-transparent bg-neutral-950'
                     : 'border-white/25 active:scale-95 bg-neutral-900'
@@ -127,12 +127,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                   alt={char.name} 
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                   onError={(e) => {
-                    // Резервный цвет, если локальный файл еще не положили
                     (e.target as HTMLElement).style.display = 'none';
                   }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
-                <span className="relative z-10 text-[8px] font-black uppercase text-center leading-tight truncate text-white drop-shadow">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
+                <span className="relative z-10 text-[6.5px] font-black uppercase text-center leading-none truncate text-white drop-shadow">
                   {char.name}
                 </span>
               </div>
@@ -141,24 +140,62 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       </div>
 
-      {/* Подтверждение стартового выбора */}
-      {!isConfirmed && selectedChar && (
-        <div className="absolute bottom-0 inset-x-0 bg-black/95 backdrop-blur-2xl border-t border-white/20 p-4 pb-[max(env(safe-area-inset-bottom),16px)] flex flex-col gap-2.5 z-30">
-          <div>
-            <h3 className="text-base font-black uppercase">{selectedChar.name}</h3>
-            <p className="text-[11px] text-neutral-300 line-clamp-2">{selectedChar.shortDesc}</p>
-          </div>
+      {/* 3. НИЖНЯЯ ПАНЕЛЬ ПОДТВЕРЖДЕНИЯ (НЕ ПЕРЕКРЫВАЕТ КВАДРАТЫ) */}
+      {!isConfirmed && (
+        <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-[max(env(safe-area-inset-bottom),14px)] flex flex-col gap-2 z-20">
+          {selectedChar ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <img 
+                    src={selectedChar.avatar} 
+                    alt={selectedChar.name} 
+                    className="w-7 h-7 object-cover border border-white shrink-0" 
+                  />
+                  <div className="overflow-hidden">
+                    <h3 className="text-xs font-black uppercase truncate">{selectedChar.name}</h3>
+                    <p className="text-[10px] text-neutral-400 truncate">{selectedChar.shortDesc}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setInfoChar(selectedChar)}
+                  className="p-1.5 bg-white/10 border border-white/20 shrink-0 text-neutral-300 ml-2"
+                >
+                  <Info size={13} />
+                </button>
+              </div>
+              <button
+                onClick={() => setIsConfirmed(true)}
+                className="w-full py-3 bg-white text-black font-black text-xs active:bg-neutral-300 transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5"
+              >
+                <Check size={14} />
+                Подтвердить выбор
+              </button>
+            </>
+          ) : (
+            <p className="text-[11px] text-center text-neutral-400 py-2">
+              Нажмите на любого персонажа выше, чтобы выбрать его
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА И ЧАТА (В РЕЖИМЕ ИГРЫ) */}
+      {isConfirmed && (
+        <div className="shrink-0 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
+            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода...'}
+          </span>
           <button
-            onClick={() => setIsConfirmed(true)}
-            className="w-full py-3.5 bg-white text-black font-black text-xs active:bg-neutral-300 transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5"
+            onClick={() => setIsChatOpen(true)}
+            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors"
           >
-            <Check size={16} />
-            Подтвердить выбор
+            <MessageSquare size={16} />
           </button>
         </div>
       )}
 
-      {/* Меню долгого нажатия: Кнопка выбора/угадывания */}
+      {/* 5. РЕЖИМ ДОЛГОГО НАЖАТИЯ: ВЫБОР / УГАДЫВАНИЕ */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
@@ -174,7 +211,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               className="w-24 h-24 object-cover border border-white"
             />
             <h4 className="text-sm font-black uppercase">{accuseChar.name}</h4>
-            <p className="text-[11px] text-neutral-400">Это секретный герой соперника?</p>
+            <p className="text-[11px] text-neutral-400">Это секретный персонаж соперника?</p>
             
             <div className="flex gap-2 w-full pt-1">
               <button
@@ -185,7 +222,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
               </button>
               <button
                 onClick={() => {
-                  alert(`Проверка: если соперник выбрал ${accuseChar.name} — ПОБЕДА!`);
+                  alert(`Проверка: если соперник загадал ${accuseChar.name} — ПОБЕДА!`);
                   onBackToMenu();
                 }}
                 className="flex-1 py-3 bg-white text-black text-xs font-black uppercase"
@@ -197,7 +234,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* Окно сведений из Википедии и приметами костюма [i] */}
+      {/* 6. МОДАЛКА ВИКИПЕДИИ И ПРИМЕТ КОСТЮМА [i] */}
       {infoChar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-5">
           <div className="w-full max-w-sm bg-neutral-950 border border-white/30 p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
@@ -223,22 +260,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* Нижняя панель с кнопкой чата под Safe Area */}
-      {isConfirmed && (
-        <div className="px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода...'}
-          </span>
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors"
-          >
-            <MessageSquare size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Чат диалога ходов */}
+      {/* 7. ПОЛНОЭКРАННЫЙ ЧАТ ХОДОВ */}
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
