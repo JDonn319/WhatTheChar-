@@ -5,13 +5,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Считываем и жестко очищаем ключ от пробелов, кавычек и невидимых символов
-  let rawKey = process.env.AI_API_KEY || '';
+  // Считываем AI_API_KET (с подстраховкой на AI_API_KEY) и очищаем от пробелов и кавычек
+  let rawKey = process.env.AI_API_KET || process.env.AI_API_KEY || '';
   let apiKey = rawKey.trim().replace(/^["']|["']$/g, '');
 
   if (!apiKey) {
     return res.status(200).json({ 
-      answer: '⚠️ Ключ AI_API_KEY пустой в Vercel Settings -> Environment Variables.',
+      answer: '⚠️ Ключ не найден! В Vercel переменная называется AI_API_KET или AI_API_KEY. Проверь Settings -> Environment Variables и сделай Redeploy.',
       aiQuestion: 'Твой герой носит маску?',
       guessId: null
     });
@@ -41,7 +41,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 `;
 
   try {
-    // Используем официальный endpoint v1beta и передаем ключ и в URL, и в официальном заголовке x-goog-api-key
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
     const response = await fetch(geminiUrl, {
@@ -65,14 +64,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json();
 
-    // Если Google вернул ошибку авторизации ключа
     if (data.error) {
       const keyMasked = apiKey.length > 8 
         ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)} (длина: ${apiKey.length})` 
         : 'слишком короткий';
 
       return res.status(200).json({
-        answer: `Ошибка Google: ${data.error.message}\n\n[Проверка ключа в коде: ${keyMasked}]. Убедись, что ключ создан именно в aistudio.google.com/apikey, а не в обычном Google Cloud.`,
+        answer: `Ошибка Google: ${data.error.message}\n\n[Проверка ключа AI_API_KET: ${keyMasked}]`,
         aiQuestion: 'Твой герой мужчина?',
         guessId: null
       });
