@@ -10,28 +10,34 @@ export interface AiModelOption {
 
 export const AI_MODELS: AiModelOption[] = [
   {
+    id: 'gemini-1.5-flash-8b',
+    name: 'Gemini 1.5 Flash-8B',
+    badge: 'Ультра-легкая',
+    desc: 'Компактная скоростная модель с минимальной задержкой ответа.'
+  },
+  {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash',
+    badge: 'Классическая Flash',
+    desc: 'Проверенная временем рабочая модель с хорошей скоростью.'
+  },
+  {
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    badge: 'Поколение 2.0',
+    desc: 'Быстрый отклик и улучшенное понимание правил дуэли.'
+  },
+  {
     id: 'gemini-3.1-flash-lite',
     name: 'Gemini 3.1 Flash-Lite',
-    badge: 'Ультра-быстрая',
-    desc: 'Огромный запас мощности серверов. Практически исключает ошибку «Занято».'
+    badge: 'Свежая Lite',
+    desc: 'Огромный запас серверной мощности. Идеальна в часы пик.'
   },
   {
     id: 'gemini-3.8-flash',
     name: 'Gemini 3.8 Flash',
-    badge: 'Флагман + Мышление',
-    desc: 'Глубокая логика и дедукция, но в часы пик может быть перегружена.'
-  },
-  {
-    id: 'gemini-3.5-flash',
-    name: 'Gemini 3.5 Flash',
-    badge: 'Сбалансированная',
-    desc: 'Оптимальный баланс между скоростью ответов и логикой.'
-  },
-  {
-    id: 'gemini-3.5-flash-lite',
-    name: 'Gemini 3.5 Flash-Lite',
-    badge: 'Легкая',
-    desc: 'Быстрая рабочая модель с хорошей скоростью генерации.'
+    badge: 'Флагман 3.8',
+    desc: 'Максимальная логическая глубина и дедуктивное мышление.'
   }
 ];
 
@@ -63,12 +69,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     {
       id: 'space',
       label: 'Космос',
-      url: '/background2.png'
+      url: '/background2.jpg'
     },
     {
       id: 'meadow',
       label: 'Поляна',
-      url: '/background3.png'
+      url: '/background3.jpg'
     },
     {
       id: 'black',
@@ -92,7 +98,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       <div className="flex-1 overflow-y-auto py-5 flex flex-col gap-6 max-w-sm w-full mx-auto">
         
-        {/* 1. Блок монитора тарифа */}
+        {/* Монитор квоты */}
         <section className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-neutral-400">
             <Activity size={14} className="text-emerald-400" />
@@ -114,12 +120,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <p className="text-[10px] text-neutral-400 leading-relaxed border-t border-white/10 pt-2">
-              🛡️ При исчерпании лимита или перегрузке игра автоматически переключается на свободную резервную модель.
+              🛡️ При перегрузке сервера или исчерпании лимита игра плавно переключается на доступную резервную модель.
             </p>
           </div>
         </section>
 
-        {/* 2. Выбор модели ИИ */}
+        {/* Выбор модели Gemini */}
         <section className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-neutral-400">
             <Cpu size={14} />
@@ -158,7 +164,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </section>
 
-        {/* 3. Выбор фона */}
+        {/* Выбор фона */}
         <section className="flex flex-col gap-2 pb-2">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-neutral-400">
             <ImageIcon size={14} />
