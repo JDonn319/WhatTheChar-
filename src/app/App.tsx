@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SplashScreen } from '../ui/SplashScreen';
 import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
 import { TransitionLoader } from '../ui/TransitionLoader';
 import { Character, CHARACTERS_DB, getRandom36, UniverseType } from '../data/characters';
 import { AiToneType } from '../ui/SettingsModal';
+import { supabase } from '../lib/supabase';
 
-// Генерация рандомного ника по правилам (до 8 латинских букв + до 2 цифр)
+// Генерация случайного ника (латиница + до 2 цифр)
 const generateRandomNick = () => {
   const prefixes = ['Hero', 'Shadow', 'Viper', 'Ghost', 'Rogue', 'Falcon', 'Nova', 'Titan'];
   const p = prefixes[Math.floor(Math.random() * prefixes.length)];
@@ -22,6 +23,13 @@ export const App: React.FC = () => {
   const [activeUniverse, setActiveUniverse] = useState<string>('all');
   const [isAiMode, setIsAiMode] = useState(false);
 
+  // Мультиплеерные данные
+  const [multiplayerConfig, setMultiplayerConfig] = useState<{
+    roomId: string;
+    isHost: boolean;
+    timerSeconds: number;
+  } | null>(null);
+
   // Никнейм
   const [nickname, setNickname] = useState<string>(() => {
     return localStorage.getItem('wtc_nickname') || generateRandomNick();
@@ -32,7 +40,7 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_nickname', name);
   };
 
-  // Тон ИИ (стандартный, саркастичный, расшатанный)
+  // Тон ИИ
   const [aiTone, setAiTone] = useState<AiToneType>(() => {
     return (localStorage.getItem('wtc_ai_tone') as AiToneType) || 'standard';
   });
@@ -42,40 +50,116 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_ai_tone', tone);
   };
 
-  // Модель
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash-8b');
+  // Модель ИИ
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
 
-  // Фоновое изображение
+  // Фон
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
 
+  // Старт одиночной игры с ИИ
   const startSinglePlayer = (universe: UniverseType) => {
     const chars = getRandom36(universe);
     setActiveCharacters(chars);
     setActiveUniverse(universe);
     setIsAiMode(true);
+    setMultiplayerConfig(null);
     setIsTransitioning(true);
   };
 
-  const startMultiplayer = (config: {
+  // Старт онлайн-комнаты на двоих
+  const startMultiplayer = async (config: {
     roomId: string;
     themes: UniverseType[];
     timerSeconds: number;
     password?: string;
     isHost: boolean;
   }) => {
-    let pool = CHARACTERS_DB;
-    if (!config.themes.includes('all')) {
-      pool = CHARACTERS_DB.filter(c => config.themes.includes(c.universe));
+    if (!supabase) {
+      alert('Ошибка: Supabase не подключен. Проверьте переменные VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY на Vercel.');
+      return;
     }
-    const shuffled = [...pool].sort(() => 0.5 - Math.random());
-    const chars = shuffled.slice(0, 36);
 
-    setActiveCharacters(chars);
-    setActiveUniverse(config.themes.join('+'));
-    setIsAiMode(false);
-    setIsTransitioning(true);
+    if (config.isHost) {
+      // 1. ХОСТ: формирует 36 персонажей и создает запись комнаты в базе
+      let pool = CHARACTERS_DB;
+      if (!config.themes.includes('all')) {
+        pool = CHARACTERS_DB.filter(c => config.themes.includes(c.universe));
+      }
+      const shuffled = [...pool].sort(() => 0.5 - Math.random());
+      const selected36 = shuffled.slice(0, 36);
+
+      const { error } = await supabase.from('rooms').insert({
+        id: config.roomId,
+        host_nickname: nickname,
+        password: config.password || null,
+        themes: config.themes,
+        timer_seconds: config.timerSeconds,
+        characters: selected36,
+        status: 'waiting',
+        current_turn: 'host',
+        host_lives: 3,
+        guest_lives: 3
+      });
+
+      if (error) {
+        alert(`Не удалось создать комнату: ${error.message}`);
+        return;
+      }
+
+      setActiveCharacters(selected36);
+      setActiveUniverse(config.themes.join('+'));
+      setIsAiMode(false);
+      setMultiplayerConfig({
+        roomId: config.roomId,
+        isHost: true,
+        timerSeconds: config.timerSeconds
+      });
+      setIsTransitioning(true);
+
+    } else {
+      // 2. ГОСТЬ: находит комнату по коду и забирает те же 36 персонажей
+      const { data: room, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', config.roomId)
+        .single();
+
+      if (error || !room) {
+        alert('Комната с таким кодом не найдена!');
+        return;
+      }
+
+      if (room.password && room.password !== config.password) {
+        alert('Неверный пароль комнаты!');
+        return;
+      }
+
+      if (room.guest_nickname && room.guest_nickname !== nickname) {
+        alert('В этой комнате уже играют двое!');
+        return;
+      }
+
+      // Присоединяемся
+      await supabase
+        .from('rooms')
+        .update({
+          guest_nickname: nickname,
+          status: 'picking'
+        })
+        .eq('id', config.roomId);
+
+      setActiveCharacters(room.characters);
+      setActiveUniverse(room.themes ? room.themes.join('+') : 'all');
+      setIsAiMode(false);
+      setMultiplayerConfig({
+        roomId: config.roomId,
+        isHost: false,
+        timerSeconds: room.timer_seconds || 0
+      });
+      setIsTransitioning(true);
+    }
   };
 
   return (
@@ -87,10 +171,12 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Загрузка PWA */}
       {isAppLoading && (
         <SplashScreen onLoaded={() => setIsAppLoading(false)} />
       )}
 
+      {/* Кэширование картинок перед матчем */}
       {isTransitioning && (
         <TransitionLoader 
           characters={activeCharacters}
@@ -101,6 +187,7 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Главное меню */}
       {!isAppLoading && !isTransitioning && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
@@ -116,11 +203,15 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Игровое поле (Одиночное или Мультиплеер) */}
       {!isAppLoading && !isTransitioning && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
           isAiMode={isAiMode}
-          onBackToMenu={() => setGameState('menu')}
+          onBackToMenu={() => {
+            setMultiplayerConfig(null);
+            setGameState('menu');
+          }}
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
           currentBg={backgroundUrl}
@@ -130,6 +221,7 @@ export const App: React.FC = () => {
           onSaveNickname={handleSaveNickname}
           aiTone={aiTone}
           onSelectAiTone={handleSelectAiTone}
+          multiplayerConfig={multiplayerConfig}
         />
       )}
     </main>
