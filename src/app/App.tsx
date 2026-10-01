@@ -1,22 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SplashScreen } from '../ui/SplashScreen';
 import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
 import { TransitionLoader } from '../ui/TransitionLoader';
-import { Character, getRandom36, UniverseType } from '../data/characters';
+import { Character, CHARACTERS_DB, getRandom36, UniverseType } from '../data/characters';
+import { AiToneType } from '../ui/SettingsModal';
+
+// Генерация рандомного ника по правилам (до 8 латинских букв + до 2 цифр)
+const generateRandomNick = () => {
+  const prefixes = ['Hero', 'Shadow', 'Viper', 'Ghost', 'Rogue', 'Falcon', 'Nova', 'Titan'];
+  const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+  const num = Math.floor(Math.random() * 90 + 10);
+  return `${p}${num}`;
+};
 
 export const App: React.FC = () => {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [gameState, setGameState] = useState<'menu' | 'playing'>('menu');
   const [activeCharacters, setActiveCharacters] = useState<Character[]>([]);
-  const [activeUniverse, setActiveUniverse] = useState<UniverseType>('all');
+  const [activeUniverse, setActiveUniverse] = useState<string>('all');
   const [isAiMode, setIsAiMode] = useState(false);
-  
-  // Модель по умолчанию
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
 
-  // Фоновое изображение (дефолтное)
+  // Никнейм
+  const [nickname, setNickname] = useState<string>(() => {
+    return localStorage.getItem('wtc_nickname') || generateRandomNick();
+  });
+
+  const handleSaveNickname = (name: string) => {
+    setNickname(name);
+    localStorage.setItem('wtc_nickname', name);
+  };
+
+  // Тон ИИ (стандартный, саркастичный, расшатанный)
+  const [aiTone, setAiTone] = useState<AiToneType>(() => {
+    return (localStorage.getItem('wtc_ai_tone') as AiToneType) || 'standard';
+  });
+
+  const handleSelectAiTone = (tone: AiToneType) => {
+    setAiTone(tone);
+    localStorage.setItem('wtc_ai_tone', tone);
+  };
+
+  // Модель
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash-8b');
+
+  // Фоновое изображение
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
@@ -29,21 +58,28 @@ export const App: React.FC = () => {
     setIsTransitioning(true);
   };
 
-  const startMultiplayer = (universe: UniverseType) => {
-    const chars = getRandom36(universe);
+  const startMultiplayer = (config: {
+    roomId: string;
+    themes: UniverseType[];
+    timerSeconds: number;
+    password?: string;
+    isHost: boolean;
+  }) => {
+    let pool = CHARACTERS_DB;
+    if (!config.themes.includes('all')) {
+      pool = CHARACTERS_DB.filter(c => config.themes.includes(c.universe));
+    }
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    const chars = shuffled.slice(0, 36);
+
     setActiveCharacters(chars);
-    setActiveUniverse(universe);
+    setActiveUniverse(config.themes.join('+'));
     setIsAiMode(false);
     setIsTransitioning(true);
   };
 
   return (
     <main className="fixed inset-0 w-full h-full bg-black text-white overflow-hidden font-sans">
-      {/* 
-        Исправленный контейнер фонового изображения:
-        - Увеличена яркость до opacity-50 (картинка больше не уходит в глухой черный цвет)
-        - Корректная подгрузка картинок из /public/background2.jpg и /public/background3.jpg
-      */}
       {backgroundUrl && (
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50 blur-[2px] scale-105 pointer-events-none transition-all duration-700"
@@ -51,12 +87,10 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Первичная загрузка игры */}
       {isAppLoading && (
         <SplashScreen onLoaded={() => setIsAppLoading(false)} />
       )}
 
-      {/* Кэширование 36 карточек при переходе в матч */}
       {isTransitioning && (
         <TransitionLoader 
           characters={activeCharacters}
@@ -67,7 +101,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Главное меню */}
       {!isAppLoading && !isTransitioning && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
@@ -76,10 +109,13 @@ export const App: React.FC = () => {
           onChangeBg={setBackgroundUrl}
           selectedModel={selectedModel}
           onSelectModel={setSelectedModel}
+          nickname={nickname}
+          onSaveNickname={handleSaveNickname}
+          aiTone={aiTone}
+          onSelectAiTone={handleSelectAiTone}
         />
       )}
 
-      {/* Игровое поле */}
       {!isAppLoading && !isTransitioning && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
@@ -90,6 +126,10 @@ export const App: React.FC = () => {
           currentBg={backgroundUrl}
           onChangeBg={setBackgroundUrl}
           currentUniverse={activeUniverse}
+          nickname={nickname}
+          onSaveNickname={handleSaveNickname}
+          aiTone={aiTone}
+          onSelectAiTone={handleSelectAiTone}
         />
       )}
     </main>
