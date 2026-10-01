@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { SplashScreen } from '../ui/SplashScreen';
 import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
+import { TransitionLoader } from '../ui/TransitionLoader';
 import { Character, getRandom36, UniverseType } from '../data/characters';
 
 export const App: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [gameState, setGameState] = useState<'menu' | 'playing'>('menu');
   const [activeCharacters, setActiveCharacters] = useState<Character[]>([]);
   const [isAiMode, setIsAiMode] = useState(false);
@@ -14,15 +16,17 @@ export const App: React.FC = () => {
   );
 
   const startSinglePlayer = (universe: UniverseType) => {
-    setActiveCharacters(getRandom36(universe));
+    const chars = getRandom36(universe);
+    setActiveCharacters(chars);
     setIsAiMode(true);
-    setGameState('playing');
+    setIsTransitioning(true);
   };
 
   const startMultiplayer = (universe: UniverseType) => {
-    setActiveCharacters(getRandom36(universe));
+    const chars = getRandom36(universe);
+    setActiveCharacters(chars);
     setIsAiMode(false);
-    setGameState('playing');
+    setIsTransitioning(true);
   };
 
   return (
@@ -34,11 +38,24 @@ export const App: React.FC = () => {
         />
       )}
 
-      {isLoading && (
-        <SplashScreen onLoaded={() => setIsLoading(false)} />
+      {/* Первичная загрузка приложения */}
+      {isAppLoading && (
+        <SplashScreen onLoaded={() => setIsAppLoading(false)} />
       )}
 
-      {!isLoading && gameState === 'menu' && (
+      {/* Предзагрузка 36 карточек при переходе в матч */}
+      {isTransitioning && (
+        <TransitionLoader 
+          characters={activeCharacters}
+          onComplete={() => {
+            setIsTransitioning(false);
+            setGameState('playing');
+          }}
+        />
+      )}
+
+      {/* Главное меню */}
+      {!isAppLoading && !isTransitioning && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
           onStartMulti={startMultiplayer}
@@ -47,7 +64,8 @@ export const App: React.FC = () => {
         />
       )}
 
-      {!isLoading && gameState === 'playing' && (
+      {/* Игровое поле */}
+      {!isAppLoading && !isTransitioning && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
           isAiMode={isAiMode}
