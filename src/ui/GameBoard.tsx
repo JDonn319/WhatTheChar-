@@ -32,7 +32,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [infoChar, setInfoChar] = useState<Character | null>(null);
   const [accuseChar, setAccuseChar] = useState<Character | null>(null);
   
-  // Окна меню и предупреждений
+  // Модальные окна
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -48,22 +48,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     reason: string;
   }>({ show: false, isVictory: false, reason: '' });
 
-  // Чат и ход
+  // Чат и очередность ходов
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [waitingForPlayerQuestion, setWaitingForPlayerQuestion] = useState(false);
 
-  // Инициализация секрета ИИ
+  // Старт раунда с ИИ
   const initAiMatch = () => {
     if (isAiMode && characters.length > 0) {
       const randomIndex = Math.floor(Math.random() * characters.length);
       const chosen = characters[randomIndex];
       setAiSecretChar(chosen);
       setMessages([
-        { sender: 'opponent', text: 'Я загадал персонажа из этих 36! Твой первый ход — задай наводящий вопрос.' }
+        { sender: 'opponent', text: 'Я загадал персонажа из этих 36! Задай свой первый наводящий вопрос (в формате Да/Нет).' }
       ]);
+      setWaitingForPlayerQuestion(true);
     }
   };
 
@@ -82,6 +84,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setInputText('');
     setIsMyTurn(true);
     setIsAiThinking(false);
+    setWaitingForPlayerQuestion(false);
     initAiMatch();
   };
 
@@ -106,11 +109,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || !isMyTurn || isAiThinking) return;
-    const userMsg = inputText.trim();
-    const updatedHistory = [...messages, { sender: 'you' as const, text: userMsg }];
-    
+  // Отправка хода
+  const handleSendMessage = async (customText?: string) => {
+    const textToSend = (customText !== undefined ? customText : inputText).trim();
+    if (!textToSend || !isMyTurn || isAiThinking) return;
+
+    const updatedHistory = [...messages, { sender: 'you' as const, text: textToSend }];
     setMessages(updatedHistory);
     setInputText('');
     setIsMyTurn(false);
@@ -125,7 +129,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             aiSecretChar,
             charactersPool: characters,
             chatHistory: updatedHistory,
-            playerQuestion: userMsg,
+            playerQuestion: textToSend,
             preferredModel: selectedModel,
             universe: currentUniverse
           })
@@ -136,10 +140,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         if (data.wasSwitched) {
           updatedHistory.push({
             sender: 'opponent',
-            text: `[🔄 Резервное переключение на ${data.usedModel} из-за высокой нагрузки]`
+            text: `[🔄 Резервное переключение на ${data.usedModel} из-за нагрузки]`
           });
         }
 
+        // Проверка победы ИИ
         if (data.guessId) {
           if (data.guessId === selectedChar?.id) {
             setGameResult({
@@ -156,10 +161,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             ]);
           }
         } else {
-          setMessages([
-            ...updatedHistory,
-            { sender: 'opponent', text: `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` }
-          ]);
+          // Если ИИ вернул свой вопрос
+          if (data.aiQuestion) {
+            setMessages([
+              ...updatedHistory,
+              { sender: 'opponent', text: `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` }
+            ]);
+            setWaitingForPlayerQuestion(false);
+          } else {
+            // ИИ ждет формулировку вопроса игрока
+            setMessages([
+              ...updatedHistory,
+              { sender: 'opponent', text: data.answer }
+            ]);
+            setWaitingForPlayerQuestion(true);
+          }
         }
       } catch (err) {
         setMessages([
@@ -171,6 +187,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         setIsMyTurn(true);
       }
     }
+  };
+
+  // Нажатие на кнопки «Да / Нет / Частично»
+  const handleQuickAnswerClick = (answerValue: string) => {
+    if (!isMyTurn || isAiThinking) return;
+    // Если игрок нажал «Да/Нет», сразу отправляем этот ответ ИИ
+    handleSendMessage(answerValue);
   };
 
   const handleMakeGuess = () => {
@@ -208,7 +231,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
       
-      {/* 1. ВЕРХНИЙ БАР */}
+      {/* ВЕРХНИЙ БАР */}
       <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0">
         {isConfirmed && selectedChar ? (
           <div className="flex items-center gap-2">
@@ -258,7 +281,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <Settings size={13} />
           </button>
 
-          {/* Кнопка выхода с вызовом предупреждения */}
           <button 
             onClick={() => setShowExitConfirm(true)}
             className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
@@ -268,7 +290,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 2. ИГРОВОЕ ПОЛЕ 6 НА 6 */}
+      {/* ИГРОВОЕ ПОЛЕ 6 НА 6 */}
       <div className={`w-full flex-1 px-1.5 py-1 flex items-center justify-center min-h-0 overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
         <div className="w-full grid grid-cols-6 gap-1 max-w-sm place-content-center">
           {characters.map(char => {
@@ -309,7 +331,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 3. НИЖНЯЯ ПАНЕЛЬ СТАРТОВОГО ПОДТВЕРЖДЕНИЯ */}
+      {/* НИЖНЯЯ ПАНЕЛЬ СТАРТОВОГО ПОДТВЕРЖДЕНИЯ */}
       {!isConfirmed && (
         <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-[max(env(safe-area-inset-bottom),14px)] flex flex-col gap-2 z-20">
           {selectedChar ? (
@@ -349,15 +371,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА И ЧАТА */}
+      {/* НИЖНЯЯ ПАНЕЛЬ ХОДА И ЧАТА */}
       {isConfirmed && (
         <div className="shrink-0 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
               {isAiThinking 
                 ? 'ИИ думает...' 
+                : waitingForPlayerQuestion
+                ? '● Задайте свой вопрос'
                 : isMyTurn 
-                ? '● Ваш ход' 
+                ? '● Ответьте на вопрос ИИ' 
                 : '○ Ход соперника...'}
             </span>
             {isAiThinking && <Loader2 size={12} className="animate-spin text-white" />}
@@ -374,7 +398,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] С ЦЕЛЫМ ФОТО */}
+      {/* ПОЛНОЭКРАННОЕ ДОСЬЕ [i] */}
       {infoChar && (
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] select-none animate-in fade-in duration-200">
           <header className="flex justify-between items-center pb-3 border-b border-white/20">
@@ -391,7 +415,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </header>
 
           <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-3 my-auto">
-            {/* Картинка целиком без обрезки */}
             <div className="w-full flex justify-center bg-neutral-950 border border-white/15 p-2">
               <img 
                 src={infoChar.avatar} 
@@ -401,7 +424,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               />
             </div>
 
-            {/* Сетка примет */}
             <div className="grid grid-cols-2 gap-2 text-[11px] p-3 bg-white/5 border border-white/10">
               <p><span className="text-neutral-400">Цвета:</span> <b className="text-white">{infoChar.traits.mainColors.join(', ')}</b></p>
               <p><span className="text-neutral-400">Шлем/Маска:</span> <b className="text-white">{infoChar.traits.hasHelmetOrMask ? 'Да' : 'Нет'}</b></p>
@@ -412,7 +434,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <p className="col-span-2 text-neutral-300 italic pt-1 border-t border-white/10">{infoChar.traits.notes}</p>
             </div>
 
-            {/* Выписка из биографии */}
             <div className="p-3 bg-white/5 border border-white/10 text-xs text-neutral-300 leading-relaxed font-sans">
               <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Выписка из базы данных:</span>
               {infoChar.wiki}
@@ -430,7 +451,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 6. ПРЕДУПРЕЖДЕНИЕ ПЕРЕД ВЫХОДОМ В МЕНЮ */}
+      {/* ПРЕДУПРЕЖДЕНИЕ ПЕРЕД ВЫХОДОМ В МЕНЮ */}
       {showExitConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-5 select-none animate-in fade-in duration-150">
           <div className="w-full max-w-xs bg-neutral-950 border border-white/30 p-5 flex flex-col items-center text-center gap-3 shadow-2xl">
@@ -464,7 +485,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 7. РЕЖИМ ВЫБОРА (LONG-PRESS) */}
+      {/* РЕЖИМ ВЫБОРА (LONG-PRESS) */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
@@ -502,7 +523,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ЧАТ РАУНДА */}
+      {/* ЧАТ РАУНДА */}
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
@@ -551,28 +572,32 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             )}
           </div>
 
-          {/* Быстрые ответы */}
+          {/* Быстрые ответы на вопрос ИИ (сразу отправляют ответ) */}
           <div className="flex gap-1.5 pb-2">
             <button 
-              onClick={() => { if (isMyTurn) setInputText('Да'); }}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+              onClick={() => handleQuickAnswerClick('Да')}
+              disabled={!isMyTurn || isAiThinking}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
               Да
             </button>
             <button 
-              onClick={() => { if (isMyTurn) setInputText('Нет'); }}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+              onClick={() => handleQuickAnswerClick('Нет')}
+              disabled={!isMyTurn || isAiThinking}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
               Нет
             </button>
             <button 
-              onClick={() => { if (isMyTurn) setInputText('Не уверен / Частично'); }}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+              onClick={() => handleQuickAnswerClick('Не уверен / Частично')}
+              disabled={!isMyTurn || isAiThinking}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
               Частично
             </button>
           </div>
 
+          {/* Поле ввода своего закрытого вопроса */}
           <div className="flex gap-1.5 pt-2 border-t border-white/20">
             <input 
               type="text"
@@ -580,11 +605,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               disabled={!isMyTurn || isAiThinking}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={isAiThinking ? "ИИ думает..." : isMyTurn ? "Задайте наводящий вопрос..." : "Ожидание хода..."}
+              placeholder={
+                isAiThinking 
+                  ? "ИИ думает..." 
+                  : waitingForPlayerQuestion 
+                  ? "Задай вопрос в формате Да/Нет (например: «Он летает?»)..." 
+                  : "Ответь на вопрос или спроси «Твой герой в маске?»..."
+              }
               className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
             />
             <button
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={!isMyTurn || !inputText.trim() || isAiThinking}
               className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center"
             >
@@ -594,7 +625,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 9. МОДАЛКА НАСТРОЕК */}
+      {/* МОДАЛКА НАСТРОЕК */}
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -604,7 +635,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         onSelectBg={onChangeBg}
       />
 
-      {/* 10. МОДАЛКА РЕЗУЛЬТАТА (ПОБЕДА / ПОРАЖЕНИЕ) С ЧИСТЫМ РЕВАНШЕМ */}
+      {/* МОДАЛКА РЕЗУЛЬТАТА (ПОБЕДА / ПОРАЖЕНИЕ) С ЧИСТЫМ СБРОСОМ */}
       {gameResult.show && (
         <GameResultModal 
           isVictory={gameResult.isVictory}
