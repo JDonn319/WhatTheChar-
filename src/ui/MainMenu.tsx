@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import { Settings, Play, Users, Check } from 'lucide-react';
 import { UniverseType } from '../data/characters';
-import { SettingsModal } from './SettingsModal';
+import { SettingsModal, AiToneType } from './SettingsModal';
+import { RoomCreateModal } from './RoomCreateModal';
 
 interface MainMenuProps {
   onStartSingle: (universe: UniverseType) => void;
-  onStartMulti: (universe: UniverseType) => void;
+  onStartMulti: (config: {
+    roomId: string;
+    themes: UniverseType[];
+    timerSeconds: number;
+    password?: string;
+    isHost: boolean;
+  }) => void;
   currentBg: string;
   onChangeBg: (url: string) => void;
   selectedModel: string;
   onSelectModel: (modelId: string) => void;
+  nickname: string;
+  onSaveNickname: (name: string) => void;
+  aiTone: AiToneType;
+  onSelectAiTone: (tone: AiToneType) => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({ 
@@ -18,10 +29,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   currentBg,
   onChangeBg,
   selectedModel,
-  onSelectModel
+  onSelectModel,
+  nickname,
+  onSaveNickname,
+  aiTone,
+  onSelectAiTone
 }) => {
   const [selectedUniverse, setSelectedUniverse] = useState<UniverseType>('all');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
 
   const universes: { id: UniverseType; label: string }[] = [
     { id: 'all', label: 'ALL SUPERHEROES' },
@@ -34,11 +50,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] z-10 box-border">
       
-      {/* Шапка с кнопкой настроек */}
+      {/* Шапка */}
       <header className="flex justify-between items-center w-full max-w-sm mx-auto">
-        <h2 className="text-xl font-black tracking-tight text-white uppercase drop-shadow-md">
-          WhatTheChar?
-        </h2>
+        <div className="flex flex-col">
+          <h2 className="text-xl font-black tracking-tight text-white uppercase drop-shadow-md">
+            WhatTheChar?
+          </h2>
+          <span className="text-[10px] font-mono text-neutral-400">Игрок: {nickname}</span>
+        </div>
         <button 
           onClick={() => setIsSettingsOpen(true)}
           className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
@@ -71,11 +90,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       {/* Кнопки старта */}
       <div className="flex flex-col gap-2 max-w-sm w-full mx-auto">
         <button
-          onClick={() => onStartMulti(selectedUniverse)}
+          onClick={() => setIsRoomModalOpen(true)}
           className="w-full py-4 bg-white/10 backdrop-blur-lg border border-white/30 text-white font-black tracking-wider active:bg-white active:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase"
         >
           <Users size={16} />
-          Создать комнату
+          Создать комнату (PvP)
         </button>
 
         <button
@@ -87,7 +106,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         </button>
       </div>
 
-      {/* Полноэкранное окно настроек */}
+      {/* Модалка настроек */}
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -95,6 +114,21 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         onSelectModel={onSelectModel}
         currentBg={currentBg}
         onSelectBg={onChangeBg}
+        nickname={nickname}
+        onSaveNickname={onSaveNickname}
+        aiTone={aiTone}
+        onSelectAiTone={onSelectAiTone}
+      />
+
+      {/* Модалка создания/входа в комнату */}
+      <RoomCreateModal
+        isOpen={isRoomModalOpen}
+        onClose={() => setIsRoomModalOpen(false)}
+        onStartRoom={(cfg) => {
+          setIsRoomModalOpen(false);
+          onStartMulti(cfg);
+        }}
+        nickname={nickname}
       />
 
     </div>
