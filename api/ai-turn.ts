@@ -10,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!apiKey) {
     return res.status(200).json({ 
-      answer: '⚠️ Ключ AI_API_KEY не найден в переменных Vercel! Зайди в Settings -> Environment Variables, добавь ключ и нажми Redeploy.',
+      answer: '⚠️ Ключ AI_API_KEY не найден в Vercel!',
       aiQuestion: 'Твой герой носит маску?',
       guessId: null
     });
@@ -39,56 +39,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 `;
 
-  try {
-    // ШАГ 1: Спрашиваем у Google список доступных моделей для этого ключа
-    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
-    const listData = await listRes.json();
+  // Функция выполнения запроса к конкретной модели
+  async function callGemini(modelName: string) {
+    const cleanModel = modelName.startsWith('models/') ? modelName : `models/${modelName}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/${cleanModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    if (listData.error) {
-      return res.status(200).json({
-        answer: `Ошибка Google при проверке ключа: ${listData.error.message}`,
-        aiQuestion: 'Твой персонаж мужчина?',
-        guessId: null
-      });
-    }
-
-    // Фильтруем только те модели, которые умеют отвечать на текст (generateContent)
-    const validModels = (listData.models || []).filter((m: any) =>
-      m.supportedGenerationMethods?.includes('generateContent')
-    );
-
-    if (validModels.length === 0) {
-      return res.status(200).json({
-        answer: 'Google API не нашел активных моделей для этого ключа. Проверьте права в Google AI Studio.',
-        aiQuestion: 'Твой герой носит шлем?',
-        guessId: null
-      });
-    }
-
-    // Авто-выбор: ищем 2.0-flash -> 2.5-flash -> любую flash -> первую попавшуюся
-    const chosenModel = 
-      validModels.find((m: any) => m.name.includes('2.0-flash')) ||
-      validModels.find((m: any) => m.name.includes('2.5-flash')) ||
-      validModels.find((m: any) => m.name.includes('flash')) ||
-      validModels[0];
-
-    const modelName = chosenModel.name; // Например, "models/gemini-2.0-flash"
-
-    // ШАГ 2: Отправляем ход выбранной рабочей модели
-    const generateUrl = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
-    const response = await fetch(generateUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: promptText }]
-          }
-        ],
+        contents: [{ parts: [{ text: promptText }] }],
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.2
@@ -96,11 +59,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     });
 
-    const data = await response.json();
+    return await response.json();
+  }
+
+  try {
+    // 1. Сначала пробуем модель, которую потребовал Google: gemini-3.8-flash
+    let data = await callGemini('gemini-3.8-flash');
+
+    // 2. Если Google просит другую модель в тексте ошибки — автоматически парсим ее название
+    if (data.error && data.error.message?.includes('Please update your code to use models/')) {
+      const match = data.error.message.match(/models\/([a-zA-Z0-9\.\-_]+)/);
+      if (match && match[1] && match[1] !== 'gemini-3.8-flash') {
+        data = await callGemini(match[1]);
+      }
+    }
+
+    // 3. Если всё ещё ошибка — делаем резервную попытку через динамический список
+    if (data.error) {
+      const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+      const listData = await listRes.json();
+      const valid = (listData.models || []).filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'));
+      
+      if (valid.length > 0) {
+        // Берем самую последнюю добавленную flash-модель из аккаунта
+        const fallback = valid.reverse().find((m: any) => m.name.includes('flash')) || valid[0];
+        data = await callGemini(fallback.name);
+      }
+    }
 
     if (data.error) {
       return res.status(200).json({
-        answer: `Ошибка генерации (${modelName}): ${data.error.message}`,
+        answer: `Ошибка Google: ${data.error.message}`,
         aiQuestion: 'Твой герой мужчина?',
         guessId: null
       });
