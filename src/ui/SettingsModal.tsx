@@ -13,7 +13,7 @@ export const AI_MODELS: AiModelOption[] = [
     id: 'gemini-3.1-flash-lite',
     name: 'Gemini 3.1 Flash-Lite',
     badge: 'Ультра-быстрая',
-    desc: 'Огромный запас серверов. Практически исключает ошибку «Занято».'
+    desc: 'Огромный запас мощности серверов. Практически исключает ошибку «Занято».'
   },
   {
     id: 'gemini-3.8-flash',
@@ -22,16 +22,16 @@ export const AI_MODELS: AiModelOption[] = [
     desc: 'Глубокая логика и дедукция, но в часы пик может быть перегружена.'
   },
   {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
+    id: 'gemini-3.5-flash',
+    name: 'Gemini 3.5 Flash',
     badge: 'Сбалансированная',
     desc: 'Оптимальный баланс между скоростью ответов и логикой.'
   },
   {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    badge: 'Классическая',
-    desc: 'Стабильная рабочая модель предыдущего поколения.'
+    id: 'gemini-3.5-flash-lite',
+    name: 'Gemini 3.5 Flash-Lite',
+    badge: 'Легкая',
+    desc: 'Быстрая рабочая модель с хорошей скоростью генерации.'
   }
 ];
 
@@ -80,11 +80,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] select-none animate-in fade-in duration-200">
       
-      {/* Шапка */}
       <header className="flex justify-between items-center pb-4 border-b border-white/20">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-black uppercase tracking-wider text-white">Параметры игры</span>
-        </div>
+        <span className="text-sm font-black uppercase tracking-wider text-white">Параметры игры</span>
         <button
           onClick={onClose}
           className="w-10 h-10 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
@@ -93,7 +90,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </button>
       </header>
 
-      {/* Основной контент с вертикальным скроллом при необходимости */}
       <div className="flex-1 overflow-y-auto py-5 flex flex-col gap-6 max-w-sm w-full mx-auto">
         
         {/* 1. Блок монитора тарифа */}
@@ -113,12 +109,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10 text-[10px] font-mono text-neutral-300">
-              <div>• Лимит: <span className="text-white font-bold">15 RPM</span> (в минуту)</div>
+              <div>• Лимит: <span className="text-white font-bold">15 RPM</span></div>
               <div>• Сутки: <span className="text-white font-bold">1,500 RPD</span></div>
             </div>
 
             <p className="text-[10px] text-neutral-400 leading-relaxed border-t border-white/10 pt-2">
-              🛡️ <span className="text-neutral-300">Защита от сбоев:</span> если выбранная модель перегружена или исчерпан лимит — раунд автоматически продолжится на свободной модели.
+              🛡️ При исчерпании лимита или перегрузке игра автоматически переключается на свободную резервную модель.
             </p>
           </div>
         </section>
@@ -127,7 +123,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <section className="flex flex-col gap-2">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-neutral-400">
             <Cpu size={14} />
-            <span>Версия нейросети Gemini</span>
+            <span>Версия Gemini</span>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -192,7 +188,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       </div>
 
-      {/* Кнопка закрытия */}
       <footer className="pt-3 border-t border-white/20 max-w-sm w-full mx-auto">
         <button
           onClick={onClose}
