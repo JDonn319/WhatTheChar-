@@ -1,8 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck } from 'lucide-react';
+import { 
+  Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, 
+  Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck, 
+  Users, Clock, Share2 
+} from 'lucide-react';
 import { Character } from '../data/characters';
 import { GameResultModal } from './GameResultModal';
 import { SettingsModal, AiToneType } from './SettingsModal';
+import { supabase } from '../lib/supabase';
 
 interface GameBoardProps {
   characters: Character[];
@@ -17,6 +22,11 @@ interface GameBoardProps {
   onSaveNickname: (name: string) => void;
   aiTone: AiToneType;
   onSelectAiTone: (tone: AiToneType) => void;
+  multiplayerConfig?: {
+    roomId: string;
+    isHost: boolean;
+    timerSeconds: number;
+  } | null;
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -31,10 +41,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   nickname,
   onSaveNickname,
   aiTone,
-  onSelectAiTone
+  onSelectAiTone,
+  multiplayerConfig
 }) => {
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
-  const [aiSecretChar, setAiSecretChar] = useState<Character | null>(null);
+  const [opponentChar, setOpponentChar] = useState<Character | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
   const [wrongAccusedIds, setWrongAccusedIds] = useState<string[]>([]);
@@ -49,7 +60,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Жизни игрока (3 сердечка)
   const [playerLives, setPlayerLives] = useState<number>(3);
 
-  // Окно победы/поражения
+  // Окно результата раунда
   const [gameResult, setGameResult] = useState<{
     show: boolean;
     isVictory: boolean;
@@ -58,22 +69,140 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Чат и автоскролл
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string; isError?: boolean }[]>([]);
+  const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string; senderName?: string }[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [serverBusyError, setServerBusyError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-  // Режим разработчика (ucansay)
   const [isDevMode, setIsDevMode] = useState(false);
+
+  // Мультиплеерный статус
+  const [multiStatus, setMultiStatus] = useState<'waiting_guest' | 'picking' | 'playing'>('picking');
+  const [opponentNickname, setOpponentNickname] = useState<string>('Соперник');
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number>(multiplayerConfig?.timerSeconds || 0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // ==========================================
+  // ОНЛАЙН СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE
+  // ==========================================
+  useEffect(() => {
+    if (isAiMode || !multiplayerConfig || !supabase) return;
+
+    const roomId = multiplayerConfig.roomId;
+    const isHost = multiplayerConfig.isHost;
+
+    if (isHost) {
+      setMultiStatus('waiting_guest');
+    }
+
+    // Подписка на обновление комнаты (комната, ходы, победы)
+    const roomChannel = supabase
+      .channel(`room_sync_${roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
+        (payload: any) => {
+          const room = payload.new;
+
+          // Подключение второго игрока
+          if (isHost && room.guest_nickname && multiStatus === 'waiting_guest') {
+            setOpponentNickname(room.guest_nickname);
+            setMultiStatus('picking');
+          }
+
+          if (!isHost && room.host_nickname) {
+            setOpponentNickname(room.host_nickname);
+          }
+
+          // Оба выбрали персонажей -> игра начинается
+          if (room.host_char_id && room.guest_char_id && room.status === 'playing') {
+            setMultiStatus('playing');
+            const oppId = isHost ? room.guest_char_id : room.host_char_id;
+            const oppHero = characters.find(c => c.id === oppId);
+            if (oppHero) setOpponentChar(oppHero);
+
+            // Очередь хода
+            const myRole = isHost ? 'host' : 'guest';
+            setIsMyTurn(room.current_turn === myRole);
+          }
+
+          // Проверка жизней и победителя
+          const myLives = isHost ? room.host_lives : room.guest_lives;
+          setPlayerLives(myLives);
+
+          if (room.winner) {
+            const myRole = isHost ? 'host' : 'guest';
+            const won = room.winner === myRole;
+            setGameResult({
+              show: true,
+              isVictory: won,
+              reason: room.finish_reason || (won ? 'Вы победили!' : 'Вы проиграли!')
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Подписка на новые сообщения в чате
+    const messagesChannel = supabase
+      .channel(`room_chat_${roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` },
+        (payload: any) => {
+          const msg = payload.new;
+          const myRole = isHost ? 'host' : 'guest';
+          const isMe = msg.sender === myRole;
+
+          setMessages(prev => [
+            ...prev,
+            {
+              sender: isMe ? 'you' : 'opponent',
+              text: msg.text,
+              senderName: msg.sender_name
+            }
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(roomChannel);
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [isAiMode, multiplayerConfig, characters, multiStatus]);
+
+  // Таймер на ход
+  useEffect(() => {
+    if (!isConfirmed || isAiMode || !multiplayerConfig?.timerSeconds) return;
+
+    setTimeLeft(multiplayerConfig.timerSeconds);
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          // Время вышло — передаем ход сопернику
+          if (isMyTurn && supabase && multiplayerConfig) {
+            const nextTurn = multiplayerConfig.isHost ? 'guest' : 'host';
+            supabase.from('rooms').update({ current_turn: nextTurn }).eq('id', multiplayerConfig.roomId);
+          }
+          return multiplayerConfig.timerSeconds;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isMyTurn, isConfirmed, isAiMode, multiplayerConfig]);
+
+  // Инициализация одиночной игры с ИИ
   const initAiMatch = () => {
     if (isAiMode && characters.length > 0) {
       const randomIndex = Math.floor(Math.random() * characters.length);
-      setAiSecretChar(characters[randomIndex]);
+      const chosen = characters[randomIndex];
+      setOpponentChar(chosen);
       setMessages([
         { sender: 'opponent', text: 'Я загадал персонажа! Задай свой наводящий вопрос (в формате Да/Нет).' }
       ]);
@@ -81,10 +210,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   useEffect(() => {
-    initAiMatch();
+    if (isAiMode) {
+      initAiMatch();
+    }
   }, [isAiMode, characters]);
 
-  // Автоскролл к последнему сообщению
+  // Автоскролл чата
   useEffect(() => {
     if (isChatOpen) {
       setTimeout(() => {
@@ -93,7 +224,138 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isChatOpen, messages, isAiThinking]);
 
-  const handleFullRematch = () => {
+  // Подтверждение своего тайного персонажа
+  const handleConfirmSecretChar = async () => {
+    if (!selectedChar) return;
+    setIsConfirmed(true);
+
+    if (!isAiMode && multiplayerConfig && supabase) {
+      const field = multiplayerConfig.isHost ? 'host_char_id' : 'guest_char_id';
+      
+      // Отправляем свой выбор в базу
+      await supabase
+        .from('rooms')
+        .update({ [field]: selectedChar.id })
+        .eq('id', multiplayerConfig.roomId);
+
+      // Проверяем, выбрал ли уже соперник
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', multiplayerConfig.roomId)
+        .single();
+
+      if (room?.host_char_id && room?.guest_char_id) {
+        // Оба выбрали — стартуем раунд!
+        await supabase
+          .from('rooms')
+          .update({ status: 'playing', current_turn: 'host' })
+          .eq('id', multiplayerConfig.roomId);
+        
+        setMultiStatus('playing');
+      }
+    }
+  };
+
+  // Отправка сообщения / вопроса
+  const handleSendMessage = async (textOverride?: string) => {
+    const textToSend = (textOverride !== undefined ? textOverride : inputText).trim();
+    if (!textToSend || !isMyTurn || isAiThinking) return;
+
+    if (isAiMode) {
+      // РЕЖИМ С ИИ
+      setServerBusyError(null);
+      const updatedHistory = [...messages, { sender: 'you' as const, text: textToSend }];
+      setMessages(updatedHistory);
+      setInputText('');
+      setIsMyTurn(false);
+
+      if (opponentChar) {
+        setIsAiThinking(true);
+        try {
+          const response = await fetch('/api/ai-turn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              aiSecretChar: opponentChar,
+              charactersPool: characters,
+              chatHistory: updatedHistory,
+              playerQuestion: textToSend,
+              preferredModel: selectedModel,
+              universe: currentUniverse,
+              isDevMode,
+              aiTone
+            })
+          });
+
+          const data = await response.json();
+
+          if (response.status === 503 || data.isBusy) {
+            setServerBusyError(data.error || 'Серверы перегружены.');
+            setIsAiThinking(false);
+            setIsMyTurn(true);
+            return;
+          }
+
+          if (data.toggledDevMode !== undefined) {
+            setIsDevMode(data.toggledDevMode);
+          }
+
+          if (data.guessId) {
+            if (data.guessId === selectedChar?.id) {
+              setGameResult({
+                show: true,
+                isVictory: false,
+                reason: `ИИ вычислил твоего персонажа! Это ${selectedChar.name}.`
+              });
+              setIsAiThinking(false);
+              return;
+            } else {
+              setMessages([
+                ...updatedHistory,
+                { sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
+              ]);
+            }
+          } else {
+            const replyText = data.aiQuestion 
+              ? `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` 
+              : data.answer;
+
+            setMessages([...updatedHistory, { sender: 'opponent', text: replyText }]);
+          }
+        } catch (err: any) {
+          setServerBusyError('Ошибка соединения с сервером.');
+        } finally {
+          setIsAiThinking(false);
+          setIsMyTurn(true);
+        }
+      }
+    } else {
+      // РЕЖИМ PVP ОНЛАЙН (ЧЕРЕЗ SUPABASE)
+      if (!supabase || !multiplayerConfig) return;
+
+      const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
+      const nextRole = multiplayerConfig.isHost ? 'guest' : 'host';
+
+      setInputText('');
+
+      // 1. Записываем сообщение в чат
+      await supabase.from('room_messages').insert({
+        room_id: multiplayerConfig.roomId,
+        sender: myRole,
+        sender_name: nickname,
+        text: textToSend
+      });
+
+      // 2. Передаем ход сопернику
+      await supabase.from('rooms').update({
+        current_turn: nextRole
+      }).eq('id', multiplayerConfig.roomId);
+    }
+  };
+
+  // Реванш
+  const handleFullRematch = async () => {
     setGameResult({ show: false, isVictory: false, reason: '' });
     setSelectedChar(null);
     setIsConfirmed(false);
@@ -106,151 +368,105 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setIsAiThinking(false);
     setServerBusyError(null);
     setIsDevMode(false);
-    initAiMatch();
-  };
 
-  const handleCardClick = (char: Character) => {
-    if (!isConfirmed) {
-      setSelectedChar(char);
-      return;
-    }
-    if (wrongAccusedIds.includes(char.id)) return;
-    setEliminatedIds(prev => 
-      prev.includes(char.id) ? prev.filter(id => id !== char.id) : [...prev, char.id]
-    );
-  };
-
-  const handleTouchStart = (char: Character) => {
-    if (!isConfirmed) return;
-    if (wrongAccusedIds.includes(char.id)) return;
-    longPressTimer.current = setTimeout(() => {
-      setAccuseChar(char);
-    }, 450);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-  };
-
-  const handleSendMessage = async (textOverride?: string) => {
-    const textToSend = (textOverride !== undefined ? textOverride : inputText).trim();
-    if (!textToSend || !isMyTurn || isAiThinking) return;
-
-    setServerBusyError(null);
-    const updatedHistory = [...messages, { sender: 'you' as const, text: textToSend }];
-    setMessages(updatedHistory);
-    setInputText('');
-    setIsMyTurn(false);
-
-    if (isAiMode && aiSecretChar) {
-      setIsAiThinking(true);
-      try {
-        const response = await fetch('/api/ai-turn', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            aiSecretChar,
-            charactersPool: characters,
-            chatHistory: updatedHistory,
-            playerQuestion: textToSend,
-            preferredModel: selectedModel,
-            universe: currentUniverse,
-            isDevMode,
-            aiTone
-          })
-        });
-
-        const data = await response.json();
-
-        if (response.status === 503 || data.isBusy) {
-          setServerBusyError(data.error || 'Серверы перегружены.');
-          setIsAiThinking(false);
-          setIsMyTurn(true);
-          return;
-        }
-
-        if (data.toggledDevMode !== undefined) {
-          setIsDevMode(data.toggledDevMode);
-        }
-
-        if (data.wasSwitched) {
-          updatedHistory.push({
-            sender: 'opponent',
-            text: `[Резервное переключение на ${data.usedModel}]`
-          });
-        }
-
-        if (data.guessId) {
-          if (data.guessId === selectedChar?.id) {
-            setGameResult({
-              show: true,
-              isVictory: false,
-              reason: `ИИ вычислил твоего персонажа! Это ${selectedChar.name}.`
-            });
-            setIsAiThinking(false);
-            return;
-          } else {
-            setMessages([
-              ...updatedHistory,
-              { sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
-            ]);
-          }
-        } else {
-          const replyText = data.aiQuestion 
-            ? `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` 
-            : data.answer;
-
-          setMessages([...updatedHistory, { sender: 'opponent', text: replyText }]);
-        }
-      } catch (err: any) {
-        setServerBusyError('Ошибка соединения с сервером.');
-      } finally {
-        setIsAiThinking(false);
-        setIsMyTurn(true);
-      }
+    if (isAiMode) {
+      initAiMatch();
+    } else if (multiplayerConfig && supabase) {
+      // Сброс комнаты в базе
+      await supabase.from('rooms').update({
+        host_char_id: null,
+        guest_char_id: null,
+        status: 'picking',
+        host_lives: 3,
+        guest_lives: 3,
+        winner: null,
+        finish_reason: null,
+        current_turn: 'host'
+      }).eq('id', multiplayerConfig.roomId);
     }
   };
 
-  const handleQuickAnswerInstant = (val: string) => {
-    if (!isMyTurn || isAiThinking) return;
-    handleSendMessage(val);
-  };
-
-  const handleCopyMessage = (text: string, index: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 1500);
-  };
-
-  const handleMakeGuess = () => {
+  // Догадка персонажа
+  const handleMakeGuess = async () => {
     if (!accuseChar) return;
-    const target = isAiMode ? aiSecretChar : null;
 
-    if (target && accuseChar.id === target.id) {
-      setGameResult({
-        show: true,
-        isVictory: true,
-        reason: `Вы вычислили персонажа соперника! Это действительно ${target.name}.`
-      });
-      setAccuseChar(null);
-    } else {
-      const updatedLives = playerLives - 1;
-      setPlayerLives(updatedLives);
-      setWrongAccusedIds(prev => [...prev, accuseChar.id]);
-      setAccuseChar(null);
-
-      if (updatedLives <= 0) {
+    if (isAiMode) {
+      if (opponentChar && accuseChar.id === opponentChar.id) {
         setGameResult({
           show: true,
-          isVictory: false,
-          reason: `Вы потратили все 3 жизни! Соперник загадал: ${target?.name || 'секретного героя'}.`
+          isVictory: true,
+          reason: `Вы вычислили персонажа соперника! Это действительно ${opponentChar.name}.`
         });
+        setAccuseChar(null);
       } else {
-        setMessages(prev => [
-          ...prev,
-          { sender: 'opponent', text: `Ты ошибся! Это не ${accuseChar.name}. Жизней осталось: ${updatedLives}/3.` }
-        ]);
+        const updatedLives = playerLives - 1;
+        setPlayerLives(updatedLives);
+        setWrongAccusedIds(prev => [...prev, accuseChar.id]);
+        setAccuseChar(null);
+
+        if (updatedLives <= 0) {
+          setGameResult({
+            show: true,
+            isVictory: false,
+            reason: `Вы потратили все 3 жизни! Соперник загадал: ${opponentChar?.name || 'секретного героя'}.`
+          });
+        } else {
+          setMessages(prev => [
+            ...prev,
+            { sender: 'opponent', text: `Ты ошибся! Это не ${accuseChar.name}. Жизней осталось: ${updatedLives}/3.` }
+          ]);
+        }
       }
+    } else {
+      // ОНЛАЙН PVP ПРОВЕРКА
+      if (!supabase || !multiplayerConfig) return;
+
+      const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
+      const enemyRole = multiplayerConfig.isHost ? 'guest' : 'host';
+
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', multiplayerConfig.roomId)
+        .single();
+
+      const enemySecretId = multiplayerConfig.isHost ? room.guest_char_id : room.host_char_id;
+
+      if (accuseChar.id === enemySecretId) {
+        // ПОБЕДА!
+        await supabase.from('rooms').update({
+          winner: myRole,
+          finish_reason: `Игрок ${nickname} верно угадал персонажа ${accuseChar.name}!`
+        }).eq('id', multiplayerConfig.roomId);
+      } else {
+        // ОШИБКА
+        const currentLives = myRole === 'host' ? room.host_lives : room.guest_lives;
+        const newLives = currentLives - 1;
+        const livesField = myRole === 'host' ? 'host_lives' : 'guest_lives';
+
+        setWrongAccusedIds(prev => [...prev, accuseChar.id]);
+
+        if (newLives <= 0) {
+          await supabase.from('rooms').update({
+            [livesField]: 0,
+            winner: enemyRole,
+            finish_reason: `У игрока ${nickname} закончились все 3 жизни!`
+          }).eq('id', multiplayerConfig.roomId);
+        } else {
+          await supabase.from('rooms').update({
+            [livesField]: newLives
+          }).eq('id', multiplayerConfig.roomId);
+        }
+      }
+      setAccuseChar(null);
+    }
+  };
+
+  const copyRoomCode = () => {
+    if (multiplayerConfig?.roomId) {
+      navigator.clipboard.writeText(multiplayerConfig.roomId);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
     }
   };
 
@@ -267,8 +483,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               className="w-8 h-8 object-cover border border-white"
             />
             <div className="flex flex-col">
-              <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой герой:</span>
-              <span className="text-[11px] font-bold leading-tight truncate max-w-[100px]">{selectedChar.name}</span>
+              <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
+              <span className="text-[11px] font-bold leading-tight truncate max-w-[90px]">{selectedChar.name}</span>
             </div>
             <button 
               onClick={() => setInfoChar(selectedChar)}
@@ -284,6 +500,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5">
+          {/* Таймер хода */}
+          {!isAiMode && multiplayerConfig && multiplayerConfig.timerSeconds > 0 && isConfirmed && (
+            <div className={`flex items-center gap-1 px-1.5 py-0.5 border text-[10px] font-mono font-bold ${
+              timeLeft <= 10 ? 'border-red-500 text-red-400 bg-red-950/30 animate-pulse' : 'border-white/20 text-neutral-300'
+            }`}>
+              <Clock size={11} />
+              <span>{timeLeft}s</span>
+            </div>
+          )}
+
+          {/* Сердечки */}
           {isConfirmed && (
             <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10">
               {[1, 2, 3].map(i => (
@@ -316,6 +543,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
+      {/* БАННЕР ОЖИДАНИЯ СОПЕРНИКА В МУЛЬТИПЛЕЕРЕ */}
+      {!isAiMode && multiStatus === 'waiting_guest' && multiplayerConfig && (
+        <div className="w-full bg-white/10 border-b border-white/20 p-3 flex items-center justify-between z-20 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Loader2 size={14} className="animate-spin text-white" />
+            <div className="flex flex-col">
+              <span className="text-[9px] uppercase font-mono text-neutral-400">Код вашей комнаты:</span>
+              <span className="text-sm font-mono font-black tracking-widest text-white">{multiplayerConfig.roomId}</span>
+            </div>
+          </div>
+          <button
+            onClick={copyRoomCode}
+            className="px-3 py-1.5 bg-white text-black font-black text-xs uppercase flex items-center gap-1 active:bg-neutral-300"
+          >
+            {copiedCode ? <CheckCheck size={13} /> : <Copy size={13} />}
+            <span>{copiedCode ? 'Скопировано!' : 'Копировать'}</span>
+          </button>
+        </div>
+      )}
+
       {/* 2. ИГРОВОЕ ПОЛЕ 6 НА 6 */}
       <div className={`w-full flex-1 px-1.5 py-1 flex items-center justify-center min-h-0 overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
         <div className="w-full grid grid-cols-6 gap-1 max-w-sm place-content-center">
@@ -327,11 +574,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             return (
               <div
                 key={char.id}
-                onClick={() => handleCardClick(char)}
-                onTouchStart={() => handleTouchStart(char)}
-                onTouchEnd={handleTouchEnd}
-                onMouseDown={() => handleTouchStart(char)}
-                onMouseUp={handleTouchEnd}
+                onClick={() => {
+                  if (wrongAccusedIds.includes(char.id)) return;
+                  if (!isConfirmed) setSelectedChar(char);
+                  else setEliminatedIds(prev => prev.includes(char.id) ? prev.filter(id => id !== char.id) : [...prev, char.id]);
+                }}
+                onTouchStart={() => {
+                  if (!isConfirmed || wrongAccusedIds.includes(char.id)) return;
+                  longPressTimer.current = setTimeout(() => setAccuseChar(char), 450);
+                }}
+                onTouchEnd={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
+                onMouseDown={() => {
+                  if (!isConfirmed || wrongAccusedIds.includes(char.id)) return;
+                  longPressTimer.current = setTimeout(() => setAccuseChar(char), 450);
+                }}
+                onMouseUp={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
                 className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-0.5 overflow-hidden ${
                   !isConfirmed && isCurrentSelected
                     ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_12px_white] z-10'
@@ -390,7 +647,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </button>
               </div>
               <button
-                onClick={() => setIsConfirmed(true)}
+                onClick={handleConfirmSecretChar}
                 className="w-full py-3 bg-white text-black font-black text-xs active:bg-neutral-300 transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5"
               >
                 <Check size={14} />
@@ -410,13 +667,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="shrink-0 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
-              {isAiThinking 
-                ? 'ИИ думает...' 
-                : isDevMode
-                ? 'DEV MODE (Свободный ввод)'
-                : isMyTurn 
-                ? '● Ваш ход' 
-                : '○ Ход соперника...'}
+              {isAiMode ? (
+                isAiThinking ? 'ИИ думает...' : isMyTurn ? '● Ваш ход' : '○ Ход соперника...'
+              ) : (
+                isMyTurn ? `● Ваш ход (${nickname})` : `○ Ход соперника (${opponentNickname})...`
+              )}
             </span>
             {isAiThinking && <Loader2 size={12} className="animate-spin text-white" />}
           </div>
@@ -571,12 +826,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider">Диалог с ИИ</span>
-              {isDevMode && (
-                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/40">
-                  DEV UNLOCKED
-                </span>
-              )}
+              <span className="text-xs font-black uppercase tracking-wider">
+                {isAiMode ? 'Диалог с ИИ' : `Дуэль: ${nickname} vs ${opponentNickname}`}
+              </span>
               <div className="flex items-center gap-1 pl-2">
                 {[1, 2, 3].map(i => (
                   <Heart
@@ -602,17 +854,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line ${
                   m.sender === 'you' 
                     ? 'ml-auto bg-white text-black border-white font-medium' 
-                    : m.text.startsWith('[Резерв')
-                    ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
-                    : m.text.startsWith('[DEV')
-                    ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
                     : 'mr-auto bg-white/10 text-white border-white/20'
                 }`}
               >
+                {!isAiMode && m.senderName && (
+                  <span className="block text-[9px] font-mono opacity-50 uppercase mb-1">
+                    {m.senderName}
+                  </span>
+                )}
                 {m.text}
 
                 <button
-                  onClick={() => handleCopyMessage(m.text, idx)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(m.text);
+                    setCopiedIndex(idx);
+                    setTimeout(() => setCopiedIndex(null), 1500);
+                  }}
                   className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
                     m.sender === 'you' ? 'border-black/20 text-black' : 'border-white/20 text-neutral-400'
                   }`}
@@ -652,24 +909,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <div ref={chatEndRef} />
           </div>
 
-          {/* Быстрые ответы (мгновенная отправка) */}
+          {/* Быстрые ответы */}
           <div className="flex gap-1.5 pb-2">
             <button 
-              onClick={() => handleQuickAnswerInstant('Да')}
+              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Да'); }}
               disabled={!isMyTurn || isAiThinking}
               className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
               Да
             </button>
             <button 
-              onClick={() => handleQuickAnswerInstant('Нет')}
+              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Нет'); }}
               disabled={!isMyTurn || isAiThinking}
               className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
               Нет
             </button>
             <button 
-              onClick={() => handleQuickAnswerInstant('Не уверен / Частично')}
+              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Не уверен / Частично'); }}
               disabled={!isMyTurn || isAiThinking}
               className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
             >
@@ -684,7 +941,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               disabled={!isMyTurn || isAiThinking}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос или ucansay..."}
+              placeholder={isAiThinking ? "ИИ думает..." : isMyTurn ? "Задайте наводящий вопрос..." : "Ожидание хода..."}
               className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
             />
             <button
@@ -718,7 +975,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           isVictory={gameResult.isVictory}
           reason={gameResult.reason}
           playerChar={selectedChar}
-          opponentChar={aiSecretChar}
+          opponentChar={opponentChar}
           onRematch={handleFullRematch}
           onHome={onBackToMenu}
         />
