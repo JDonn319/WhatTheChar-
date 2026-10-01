@@ -51,9 +51,16 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Тор Одинсон',
     universe: 'marvel',
     avatar: '/characters/thor.png',
-    shortDesc: 'Бог грома в черных латах и красном плаще.',
-    wiki: 'Сын Одина с короткой стрижкой и бородой, вооружен секирой Штормбрейкер.',
-    traits: { mainColors: ['черный', 'красный'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, notes: 'Русая борода, секира в руке, красный плащ.' }
+    shortDesc: 'Первые Мстители: длинные волосы и молот Мьёльнир.',
+    wiki: 'Тор образца фильма «Мстители 1»: длинные светлые волосы до плеч, красный плащ за спиной, серебряные круглые пластины на доспехе и тяжелый квадратный молот Мьёльнир в руке.',
+    traits: { 
+      mainColors: ['серебряный', 'красный'], 
+      hasHelmetOrMask: false, 
+      hasCape: true, 
+      hasBeard: true, 
+      hasWeapon: true, 
+      notes: 'Длинные русые/золотистые волосы, молот Мьёльнир в руке (НЕ секира!), красный плащ, серебряный доспех.' 
+    }
   },
   {
     id: 'hulk',
@@ -105,9 +112,16 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Ванда Максимофф (Алая Ведьма)',
     universe: 'marvel',
     avatar: '/characters/scarlet_witch.png',
-    shortDesc: 'Бордовый корсет и алая корона.',
-    wiki: 'Ванда в темно-красном костюме с заостренной тиарой на голове и светящимися ладонями.',
-    traits: { mainColors: ['красный', 'черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, notes: 'Алая корона на голове, длинные волосы.' }
+    shortDesc: 'Эра Альтрона: красная кожаная куртка и черное платье.',
+    wiki: 'Ванда из «Мстителей: Эра Альтрона»: длинные каштановые волосы, открытое лицо БЕЗ короны, красная кожаная куртка поверх черного платья, рваные черные чулки и алая магия в пальцах.',
+    traits: { 
+      mainColors: ['красный', 'черный'], 
+      hasHelmetOrMask: false, 
+      hasCape: false, 
+      hasBeard: false, 
+      hasWeapon: false, 
+      notes: 'СТРОГО БЕЗ КОРОНЫ! Открытое лицо, красная кожаная куртка, темные волосы, красная энергия в руках.' 
+    }
   },
   {
     id: 'wolverine',
@@ -235,7 +249,6 @@ export const CHARACTERS_DB: Character[] = [
     wiki: 'Лидер Вечных в сине-голубом облачении с золотым узором, глаза светятся лазером.',
     traits: { mainColors: ['синий', 'золотой'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, notes: 'Открытое лицо, глаза горят космическим лучом.' }
   },
-  // +12 новых MARVEL:
   {
     id: 'moon_knight',
     name: 'Лунный Рыцарь (Марк Спектор)',
@@ -562,7 +575,6 @@ export const CHARACTERS_DB: Character[] = [
     wiki: 'Солдат Империи в чисто-белой кирасе, закрытом белом шлеме и с черным карабином.',
     traits: { mainColors: ['белый', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, notes: 'Белый шлем с черной полосой, лица не видно.' }
   },
-  // +12 новых STAR WARS:
   {
     id: 'c3po',
     name: 'C-3PO',
@@ -889,7 +901,6 @@ export const CHARACTERS_DB: Character[] = [
     wiki: 'Лучший студент университета Годолкина, чье тело вспыхивает ослепительным огнем.',
     traits: { mainColors: ['золотой', 'оранжевый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, notes: 'Полностью охвачен огненным золотым сиянием.' }
   },
-  // +12 новых THE BOYS:
   {
     id: 'popclaw',
     name: 'Попклоу (Шарлотта)',
@@ -1216,7 +1227,6 @@ export const CHARACTERS_DB: Character[] = [
     wiki: 'Беглец с Марса, растягивающий свои эластичные конечности и тело словно резиновые жгуты.',
     traits: { mainColors: ['зеленый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, notes: 'Голова без носа и ушей, гибкое зеленое тело-лента.' }
   },
-  // +12 новых INVINCIBLE:
   {
     id: 'lucan',
     name: 'Люкан',
