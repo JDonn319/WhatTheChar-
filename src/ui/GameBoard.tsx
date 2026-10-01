@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Info, MessageSquare, Send, X, LogOut, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Info, MessageSquare, Send, X, LogOut, Check, Loader2 } from 'lucide-react';
 import { Character } from '../data/characters';
+import { GameResultModal } from './GameResultModal';
 
 interface GameBoardProps {
   characters: Character[];
@@ -10,18 +11,38 @@ interface GameBoardProps {
 
 export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, isAiMode }) => {
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
+  const [aiSecretChar, setAiSecretChar] = useState<Character | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
   const [infoChar, setInfoChar] = useState<Character | null>(null);
   const [accuseChar, setAccuseChar] = useState<Character | null>(null);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Состояние победы / поражения
+  const [gameResult, setGameResult] = useState<{
+    show: boolean;
+    isVictory: boolean;
+    reason: string;
+  }>({ show: false, isVictory: false, reason: '' });
+
+  // Чат и ход
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([
-    { sender: 'opponent', text: 'Я загадал персонажа. Задавай вопрос про его внешность или костюм!' }
-  ]);
+  const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
+  const [isAiThinking, setIsAiThinking] = useState(false);
+
+  // Инициализация секретного персонажа ИИ в одиночном режиме
+  useEffect(() => {
+    if (isAiMode && characters.length > 0) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      const chosen = characters[randomIndex];
+      setAiSecretChar(chosen);
+      setMessages([
+        { sender: 'opponent', text: 'Я загадал персонажа из этих 36! Твой ход — задай вопрос про его внешность или костюм.' }
+      ]);
+    }
+  }, [isAiMode, characters]);
 
   const handleCardClick = (char: Character) => {
     if (!isConfirmed) {
@@ -37,29 +58,98 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
     if (!isConfirmed) return;
     longPressTimer.current = setTimeout(() => {
       setAccuseChar(char);
-    }, 500);
+    }, 450);
   };
 
   const handleTouchEnd = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  const handleSendMessage = () => {
-    if (!inputText.trim() || !isMyTurn) return;
+  // Отправка вопроса игрока
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || !isMyTurn || isAiThinking) return;
     const userMsg = inputText.trim();
-    setMessages(prev => [...prev, { sender: 'you', text: userMsg }]);
+    const updatedHistory = [...messages, { sender: 'you' as const, text: userMsg }];
+    
+    setMessages(updatedHistory);
     setInputText('');
     setIsMyTurn(false);
 
-    if (isAiMode) {
-      setTimeout(() => {
+    if (isAiMode && aiSecretChar) {
+      setIsAiThinking(true);
+      try {
+        const response = await fetch('/api/ai-turn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            aiSecretChar,
+            charactersPool: characters,
+            chatHistory: updatedHistory,
+            playerQuestion: userMsg
+          })
+        });
+
+        const data = await response.json();
+
+        // Проверяем, сделал ли ИИ финальную догадку
+        if (data.guessId) {
+          if (data.guessId === selectedChar?.id) {
+            setGameResult({
+              show: true,
+              isVictory: false,
+              reason: `ИИ вычислил вашего персонажа! Это действительно ${selectedChar.name}.`
+            });
+            setIsAiThinking(false);
+            return;
+          } else {
+            setMessages(prev => [
+              ...prev,
+              { sender: 'opponent', text: `${data.answer} Я думаю, ты загадал ${data.guessId}... О нет, я ошибся!` }
+            ]);
+          }
+        } else {
+          setMessages(prev => [
+            ...prev,
+            { sender: 'opponent', text: `${data.answer} \n\nМой вопрос: ${data.aiQuestion}` }
+          ]);
+        }
+      } catch (err) {
         setMessages(prev => [
-          ...prev, 
-          { sender: 'opponent', text: 'Да. Мой вопрос: на твоем персонаже надет шлем или маска?' }
+          ...prev,
+          { sender: 'opponent', text: 'Да. Мой вопрос: этот персонаж носит маску или шлем?' }
         ]);
+      } finally {
+        setIsAiThinking(false);
         setIsMyTurn(true);
-      }, 1400);
+      }
     }
+  };
+
+  // Быстрый ответ на вопрос ИИ
+  const handleQuickAnswer = (answer: string) => {
+    if (!isMyTurn) return;
+    setInputText(answer);
+  };
+
+  // Проверка догадки игрока по Long-press
+  const handleMakeGuess = () => {
+    if (!accuseChar) return;
+    const target = isAiMode ? aiSecretChar : null;
+
+    if (target && accuseChar.id === target.id) {
+      setGameResult({
+        show: true,
+        isVictory: true,
+        reason: `Вы безошибочно угадали персонажа! Соперник действительно загадал ${target.name}.`
+      });
+    } else {
+      setGameResult({
+        show: true,
+        isVictory: false,
+        reason: `Ошибка! Соперник загадал не ${accuseChar.name}. Победа достаётся сопернику.`
+      });
+    }
+    setAccuseChar(null);
   };
 
   return (
@@ -180,17 +270,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА И ЧАТА (В РЕЖИМЕ ИГРЫ) */}
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА И ЧАТА */}
       {isConfirmed && (
         <div className="shrink-0 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-            {isMyTurn ? '● Ваш ход: задайте вопрос' : '○ Ожидание хода...'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
+              {isAiThinking 
+                ? 'ИИ анализирует ход...' 
+                : isMyTurn 
+                ? '● Ваш ход: задайте вопрос' 
+                : '○ Ход соперника...'}
+            </span>
+            {isAiThinking && <Loader2 size={12} className="animate-spin text-white" />}
+          </div>
           <button
             onClick={() => setIsChatOpen(true)}
-            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors"
+            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors relative"
           >
             <MessageSquare size={16} />
+            {isMyTurn && !isAiThinking && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500" />
+            )}
           </button>
         </div>
       )}
@@ -221,10 +321,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                 Отмена
               </button>
               <button
-                onClick={() => {
-                  alert(`Проверка: если соперник загадал ${accuseChar.name} — ПОБЕДА!`);
-                  onBackToMenu();
-                }}
+                onClick={handleMakeGuess}
                 className="flex-1 py-3 bg-white text-black text-xs font-black uppercase"
               >
                 Выбрать
@@ -234,7 +331,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
         </div>
       )}
 
-      {/* 6. МОДАЛКА ВИКИПЕДИИ И ПРИМЕТ КОСТЮМА [i] */}
+      {/* 6. МОДАЛКА ВИКИПЕДИИ [i] */}
       {infoChar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-5">
           <div className="w-full max-w-sm bg-neutral-950 border border-white/30 p-5 flex flex-col gap-3 max-h-[85vh] overflow-y-auto">
@@ -264,7 +361,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
-            <span className="text-xs font-black uppercase tracking-wider">Вопросы и ответы раунда</span>
+            <span className="text-xs font-black uppercase tracking-wider">Диалог раунда с ИИ</span>
             <button 
               onClick={() => setIsChatOpen(false)}
               className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center"
@@ -273,11 +370,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2">
+          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5">
             {messages.map((m, idx) => (
               <div 
                 key={idx} 
-                className={`max-w-[85%] p-3 text-xs leading-relaxed border ${
+                className={`max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line ${
                   m.sender === 'you' 
                     ? 'ml-auto bg-white text-black border-white font-medium' 
                     : 'mr-auto bg-white/10 text-white border-white/20'
@@ -286,26 +383,72 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                 {m.text}
               </div>
             ))}
+            {isAiThinking && (
+              <div className="mr-auto p-3 text-xs bg-white/5 border border-white/10 flex items-center gap-2 text-neutral-400">
+                <Loader2 size={12} className="animate-spin" />
+                <span>ИИ думает над ответом...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Быстрые кнопки ответа на вопрос соперника */}
+          <div className="flex gap-1.5 pb-2">
+            <button 
+              onClick={() => handleQuickAnswer('Да')}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+            >
+              Да
+            </button>
+            <button 
+              onClick={() => handleQuickAnswer('Нет')}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+            >
+              Нет
+            </button>
+            <button 
+              onClick={() => handleQuickAnswer('Не уверен / Частично')}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black"
+            >
+              Частично
+            </button>
           </div>
 
           <div className="flex gap-1.5 pt-2 border-t border-white/20">
             <input 
               type="text"
               value={inputText}
-              disabled={!isMyTurn}
+              disabled={!isMyTurn || isAiThinking}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={isMyTurn ? "Например: «Твой персонаж в шлеме?»" : "Ждем соперника..."}
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder={isAiThinking ? "ИИ размышляет..." : isMyTurn ? "Например: «Твой герой носит плащ?»" : "Ожидание хода..."}
               className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
             />
             <button
               onClick={handleSendMessage}
-              disabled={!isMyTurn || !inputText.trim()}
+              disabled={!isMyTurn || !inputText.trim() || isAiThinking}
               className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center"
             >
               <Send size={14} />
             </button>
           </div>
         </div>
+      )}
+
+      {/* 8. ЭКРАН ПОБЕДЫ / ПОРАЖЕНИЯ */}
+      {gameResult.show && (
+        <GameResultModal 
+          isVictory={gameResult.isVictory}
+          reason={gameResult.reason}
+          playerChar={selectedChar}
+          opponentChar={aiSecretChar}
+          onRematch={() => {
+            setGameResult({ show: false, isVictory: false, reason: '' });
+            setSelectedChar(null);
+            setIsConfirmed(false);
+            setEliminatedIds([]);
+          }}
+          onHome={onBackToMenu}
+        />
       )}
 
     </div>
