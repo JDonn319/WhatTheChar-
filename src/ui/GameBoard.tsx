@@ -1,34 +1,48 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart } from 'lucide-react';
+import { Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, Settings } from 'lucide-react';
 import { Character } from '../data/characters';
 import { GameResultModal } from './GameResultModal';
+import { SettingsModal } from './SettingsModal';
 
 interface GameBoardProps {
   characters: Character[];
   onBackToMenu: () => void;
   isAiMode: boolean;
+  selectedModel: string;
+  onSelectModel: (modelId: string) => void;
+  currentBg: string;
+  onChangeBg: (url: string) => void;
 }
 
-export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, isAiMode }) => {
+export const GameBoard: React.FC<GameBoardProps> = ({ 
+  characters, 
+  onBackToMenu, 
+  isAiMode,
+  selectedModel,
+  onSelectModel,
+  currentBg,
+  onChangeBg
+}) => {
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [aiSecretChar, setAiSecretChar] = useState<Character | null>(null);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [eliminatedIds, setEliminatedIds] = useState<string[]>([]);
   const [infoChar, setInfoChar] = useState<Character | null>(null);
   const [accuseChar, setAccuseChar] = useState<Character | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // 3 Сердечка (жизни игрока)
+  // 3 Сердечка
   const [playerLives, setPlayerLives] = useState<number>(3);
 
-  // Окно победы / поражения
+  // Результат игры
   const [gameResult, setGameResult] = useState<{
     show: boolean;
     isVictory: boolean;
     reason: string;
   }>({ show: false, isVictory: false, reason: '' });
 
-  // Чат и очередность
+  // Чат
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string }[]>([]);
   const [inputText, setInputText] = useState('');
@@ -86,11 +100,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             aiSecretChar,
             charactersPool: characters,
             chatHistory: updatedHistory,
-            playerQuestion: userMsg
+            playerQuestion: userMsg,
+            preferredModel: selectedModel
           })
         });
 
         const data = await response.json();
+
+        // Уведомление, если сервер совершил авто-переключение из-за лимита
+        if (data.wasSwitched) {
+          updatedHistory.push({
+            sender: 'opponent',
+            text: `[🔄 Резервное переключение на ${data.usedModel} из-за высокой нагрузки на ${selectedModel}]`
+          });
+        }
 
         // Проверяем победу ИИ по guessId
         if (data.guessId) {
@@ -103,20 +126,20 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             setIsAiThinking(false);
             return;
           } else {
-            setMessages(prev => [
-              ...prev,
-              { sender: 'opponent', text: `${data.answer} \n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
+            setMessages([
+              ...updatedHistory,
+              { sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
             ]);
           }
         } else {
-          setMessages(prev => [
-            ...prev,
-            { sender: 'opponent', text: `${data.answer} \n\nМой вопрос: ${data.aiQuestion}` }
+          setMessages([
+            ...updatedHistory,
+            { sender: 'opponent', text: `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` }
           ]);
         }
       } catch (err) {
-        setMessages(prev => [
-          ...prev,
+        setMessages([
+          ...updatedHistory,
           { sender: 'opponent', text: 'Да. Мой вопрос: этот персонаж носит маску или шлем?' }
         ]);
       } finally {
@@ -131,13 +154,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
     setInputText(answer);
   };
 
-  // Механика выбора с потерей сердечек
   const handleMakeGuess = () => {
     if (!accuseChar) return;
     const target = isAiMode ? aiSecretChar : null;
 
     if (target && accuseChar.id === target.id) {
-      // Игрок угадал
       setGameResult({
         show: true,
         isVictory: true,
@@ -145,7 +166,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
       });
       setAccuseChar(null);
     } else {
-      // Игрок ошибся — теряет 1 сердечко
       const updatedLives = playerLives - 1;
       setPlayerLives(updatedLives);
       setEliminatedIds(prev => [...prev, accuseChar.id]);
@@ -160,7 +180,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
       } else {
         setMessages(prev => [
           ...prev,
-          { sender: 'opponent', text: `Ты ошибся! Я загадал НЕ ${accuseChar.name}. У тебя осталось жизней: ${updatedLives}/3.` }
+          { sender: 'opponent', text: `Ты ошибся! Я загадал НЕ ${accuseChar.name}. Жизней осталось: ${updatedLives}/3.` }
         ]);
       }
     }
@@ -169,7 +189,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
       
-      {/* ВЕРХНИЙ БАР С СЕРДЕЧКАМИ */}
+      {/* ВЕРХНИЙ БАР */}
       <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0">
         {isConfirmed && selectedChar ? (
           <div className="flex items-center gap-2">
@@ -180,7 +200,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
             />
             <div className="flex flex-col">
               <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
-              <span className="text-[11px] font-bold leading-tight truncate max-w-[120px]">{selectedChar.name}</span>
+              <span className="text-[11px] font-bold leading-tight truncate max-w-[110px]">{selectedChar.name}</span>
             </div>
             <button 
               onClick={() => setInfoChar(selectedChar)}
@@ -195,32 +215,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
           </span>
         )}
 
-        {/* Индикатор 3 сердечек */}
-        {isConfirmed && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10">
-            {[1, 2, 3].map((index) => {
-              const isAlive = index <= playerLives;
-              return (
+        <div className="flex items-center gap-1.5">
+          {/* Сердечки */}
+          {isConfirmed && (
+            <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10">
+              {[1, 2, 3].map((index) => (
                 <Heart
                   key={index}
-                  size={14}
+                  size={13}
                   className={`transition-all duration-500 ${
-                    isAlive 
+                    index <= playerLives 
                       ? 'text-red-500 fill-red-500 scale-100' 
                       : 'text-neutral-600 fill-neutral-800 scale-75 opacity-30 grayscale'
                   }`}
                 />
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        <button 
-          onClick={onBackToMenu}
-          className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
-        >
-          <LogOut size={13} />
-        </button>
+          {/* Кнопка настроек во время игры */}
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+          >
+            <Settings size={13} />
+          </button>
+
+          <button 
+            onClick={onBackToMenu}
+            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+          >
+            <LogOut size={13} />
+          </button>
+        </div>
       </div>
 
       {/* ИГРОВОЕ ПОЛЕ 6 НА 6 */}
@@ -425,6 +452,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
                 className={`max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line ${
                   m.sender === 'you' 
                     ? 'ml-auto bg-white text-black border-white font-medium' 
+                    : m.text.startsWith('[🔄')
+                    ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
                     : 'mr-auto bg-white/10 text-white border-white/20'
                 }`}
               >
@@ -481,6 +510,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({ characters, onBackToMenu, 
           </div>
         </div>
       )}
+
+      {/* МОДАЛКА НАСТРОЕК (ИЗ ИГРЫ) */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
+        currentBg={currentBg}
+        onSelectBg={onChangeBg}
+      />
 
       {/* МОДАЛКА РЕЗУЛЬТАТА (ПОБЕДА / ПОРАЖЕНИЕ) */}
       {gameResult.show && (
