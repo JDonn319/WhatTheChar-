@@ -63,12 +63,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     {
       id: 'space',
       label: 'Космос',
-      url: '/background2.jpg'
+      url: '/background2.png'
     },
     {
       id: 'meadow',
       label: 'Поляна',
-      url: '/background3.jpg'
+      url: '/background3.png'
     },
     {
       id: 'black',
