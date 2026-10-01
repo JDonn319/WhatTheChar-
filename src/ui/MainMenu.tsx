@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { Settings, Play, Users, Check } from 'lucide-react';
 import { UniverseType } from '../data/characters';
+import { SettingsModal } from './SettingsModal';
 
 interface MainMenuProps {
   onStartSingle: (universe: UniverseType) => void;
   onStartMulti: (universe: UniverseType) => void;
   currentBg: string;
   onChangeBg: (url: string) => void;
+  selectedModel: string;
+  onSelectModel: (modelId: string) => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({ 
   onStartSingle, 
   onStartMulti, 
-  onChangeBg 
+  currentBg,
+  onChangeBg,
+  selectedModel,
+  onSelectModel
 }) => {
   const [selectedUniverse, setSelectedUniverse] = useState<UniverseType>('all');
-  const [showSettings, setShowSettings] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const universes: { id: UniverseType; label: string }[] = [
     { id: 'all', label: 'ALL SUPERHEROES' },
@@ -28,43 +34,18 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] z-10 box-border">
       
-      {/* Шапка под Safe Area */}
+      {/* Шапка с кнопкой настроек */}
       <header className="flex justify-between items-center w-full max-w-sm mx-auto">
         <h2 className="text-xl font-black tracking-tight text-white uppercase drop-shadow-md">
           WhatTheChar?
         </h2>
         <button 
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => setIsSettingsOpen(true)}
           className="w-10 h-10 bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
         >
           <Settings size={18} />
         </button>
       </header>
-
-      {/* Меню смены фона */}
-      {showSettings && (
-        <div className="absolute top-20 right-5 w-60 bg-black/95 backdrop-blur-2xl border border-white/30 p-4 z-50 text-xs flex flex-col gap-2 shadow-2xl">
-          <p className="font-bold text-neutral-300 uppercase tracking-wider text-[10px]">Фон игры:</p>
-          <button 
-            onClick={() => { onChangeBg('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'); setShowSettings(false); }}
-            className="p-2 bg-white/10 text-left border border-white/10 hover:bg-white/20"
-          >
-            Неон Киберпанк
-          </button>
-          <button 
-            onClick={() => { onChangeBg('https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?q=80&w=1000'); setShowSettings(false); }}
-            className="p-2 bg-white/10 text-left border border-white/10 hover:bg-white/20"
-          >
-            Глубокий Космос
-          </button>
-          <button 
-            onClick={() => { onChangeBg(''); setShowSettings(false); }}
-            className="p-2 bg-white/10 text-left border border-white/10 text-neutral-400"
-          >
-            Чистый чёрный
-          </button>
-        </div>
-      )}
 
       {/* Выбор Вселенной */}
       <div className="flex flex-col gap-2 my-auto max-w-sm w-full mx-auto">
@@ -105,6 +86,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           Одиночная игра (ИИ)
         </button>
       </div>
+
+      {/* Полноэкранное окно настроек */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
+        currentBg={currentBg}
+        onSelectBg={onChangeBg}
+      />
+
     </div>
   );
 };
