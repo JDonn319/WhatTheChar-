@@ -1,74 +1,117 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Разрешаем только POST запросы
   if (req.method !== 'POST') {
-    return res.status(455).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.AI_API_KEY;
+  const apiKey = process.env.AI_API_KEY?.trim();
+
+  // Если ключ забыли добавить в Vercel
   if (!apiKey) {
-    return res.status(500).json({ 
-      answer: 'Ошибка: API-ключ не настроен в Vercel Environment Variables.',
-      aiQuestion: 'Твой ход!' 
+    return res.status(200).json({ 
+      answer: '⚠️ Ключ AI_API_KEY не найден в переменных Vercel. Проверь Settings -> Environment Variables и сделай Redeploy.',
+      aiQuestion: 'Твой персонаж носит маску или шлем?',
+      guessId: null
     });
   }
 
   const { aiSecretChar, charactersPool, chatHistory, playerQuestion } = req.body;
 
-  const systemPrompt = `
-Ты играешь в логическую дуэль «Угадай, кто?» (Guess Who) против игрока.
-На поле всего 36 персонажей: ${JSON.stringify(charactersPool.map((c: any) => ({ id: c.id, name: c.name, traits: c.traits })))}.
+  const promptText = `
+Ты играешь в настольную логическую дуэль «Угадай, кто?» (Guess Who) против игрока.
+Список всех 36 персонажей на доске: ${JSON.stringify(charactersPool?.map((c: any) => ({ id: c.id, name: c.name, traits: c.traits })))}.
 
-ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar.name}".
-Его приметы: ${JSON.stringify(aiSecretChar.traits)}.
-Его описание: "${aiSecretChar.wiki}".
+ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar?.name}".
+Его визуальные приметы: ${JSON.stringify(aiSecretChar?.traits)}.
+Его описание: "${aiSecretChar?.wiki}".
 
-ПРАВИЛА:
-1. Игрок задал вопрос: "${playerQuestion}".
-2. Ответь на вопрос игрока предельно честно ("Да", "Нет" или краткое пояснение строго по приметам твоего секретного персонажа).
-3. Задай встречный наводящий вопрос игроку про его персонажа, чтобы отсеять персонажей (или, если ты на 100% уверен, кого загадал игрок, сделай финальную догадку в поле guessId).
+ПРАВИЛА ИГРЫ:
+1. Игрок только что спросил тебя: "${playerQuestion}".
+2. Ответь предельно честно ("Да", "Нет" или краткое пояснение строго по приметам твоего секретного персонажа).
+3. Задай встречный вопрос игроку о его секретном персонаже, чтобы сузить круг подозреваемых (ИЛИ, если ты на 95% уверен, укажи его id в поле guessId).
 
-ОТВЕТЬ СТРОГО В ФОРМАТЕ JSON БЕЗ ЛИШНЕГО ТЕКСТА:
+ОТВЕТЬ СТРОГО В ФОРМАТЕ JSON:
 {
-  "answer": "Краткий честный ответ игроку",
-  "aiQuestion": "Твой встречный вопрос игроку о его персонаже",
-  "guessId": null // или "id_персонажа", если ты уверен, что разгадал игрока
+  "answer": "твой честный ответ игроку",
+  "aiQuestion": "твой встречный вопрос игроку",
+  "guessId": null
 }
 `;
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://whatthechar.vercel.app',
-        'X-Title': 'WhatTheChar Game'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001', // или 'deepseek/deepseek-chat', 'qwen/qwen-2.5-72b-instruct'
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...chatHistory.map((m: any) => ({
-            role: m.sender === 'you' ? 'user' : 'assistant',
-            content: m.text
-          })),
-          { role: 'user', content: playerQuestion }
-        ],
-        response_format: { type: 'json_object' }
-      })
-    });
+    // ВАРИАНТ А: Ключ напрямую от Google Gemini (начинается на AIza...)
+    if (apiKey.startsWith('AIza')) {
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      
+      const response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: { responseMimeType: 'application/json' }
+        })
+      });
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content);
+      const data = await response.json();
 
-    return res.status(200).json(parsed);
-  } catch (error) {
-    console.error('AI Error:', error);
+      if (data.error) {
+        return res.status(200).json({
+          answer: `Ошибка Google Gemini: ${data.error.message || 'неверный ключ'}`,
+          aiQuestion: 'Твой персонаж мужчина?',
+          guessId: null
+        });
+      }
+
+      const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parsed = JSON.parse(rawJson);
+      return res.status(200).json(parsed);
+    } 
+
+    // ВАРИАНТ Б: Ключ OpenRouter / DeepSeek (начинается на sk-...)
+    else {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://whatthechar.vercel.app',
+          'X-Title': 'WhatTheChar'
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.0-flash-001',
+          messages: [
+            { role: 'system', content: 'Ты помощник-соперник в настольной игре. Всегда отвечай только валидным JSON.' },
+            ...chatHistory?.map((m: any) => ({
+              role: m.sender === 'you' ? 'user' : 'assistant',
+              content: m.text
+            })) || [],
+            { role: 'user', content: promptText }
+          ],
+          response_format: { type: 'json_object' }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        return res.status(200).json({
+          answer: `Ошибка OpenRouter: ${data.error.message || 'проверьте баланс или ключ'}`,
+          aiQuestion: 'Твой герой носит плащ?',
+          guessId: null
+        });
+      }
+
+      const content = data.choices?.[0]?.message?.content;
+      const parsed = JSON.parse(content);
+      return res.status(200).json(parsed);
+    }
+  } catch (err: any) {
+    console.error('API Error:', err);
     return res.status(200).json({
-      answer: 'Да, пожалуй.',
-      aiQuestion: 'Твой персонаж носит маску или шлем?',
+      answer: `Сбой связи с сервером: ${err.message || 'попробуйте ещё раз'}`,
+      aiQuestion: 'Твой персонаж человек?',
       guessId: null
     });
   }
