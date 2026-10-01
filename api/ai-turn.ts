@@ -18,81 +18,93 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { aiSecretChar, charactersPool, chatHistory, playerQuestion } = req.body;
 
-  const promptText = `
-Ты играешь в логическую дуэль «Угадай, кто?» (Guess Who) против игрока.
-На игровом поле 36 персонажей: ${JSON.stringify(charactersPool?.map((c: any) => ({ id: c.id, name: c.name, traits: c.traits })))}.
+  // Форматируем историю диалога для глубокой памяти
+  const formattedHistory = (chatHistory || [])
+    .map((m: any) => `${m.sender === 'you' ? 'Игрок' : 'Ты (ИИ)'}: "${m.text}"`)
+    .join('\n');
 
-ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar?.name}".
-Его визуальные приметы: ${JSON.stringify(aiSecretChar?.traits)}.
+  const promptText = `
+Ты играешь в настольную логическую дуэль «Угадай, кто?» (Guess Who) против человека.
+На игровом поле 36 персонажей:
+${JSON.stringify(charactersPool?.map((c: any) => ({
+  id: c.id,
+  name: c.name,
+  traits: c.traits
+})))}
+
+ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar?.name}" (id: ${aiSecretChar?.id}).
+Его приметы: ${JSON.stringify(aiSecretChar?.traits)}.
 Его описание: "${aiSecretChar?.wiki}".
 
-ПРАВИЛА ИГРЫ:
-1. Вопрос игрока: "${playerQuestion}".
-2. Ответь предельно честно ("Да", "Нет" или краткий комментарий строго по приметам твоего секретного персонажа).
-3. Задай свой встречный вопрос игроку о его секретном персонаже (или укажи id персонажа в guessId, если уверен на 95%).
+ИСТОРИЯ ДИАЛОГА РАУНДА:
+${formattedHistory || 'Раунд только начался.'}
 
-ОТВЕТЬ СТРОГО В JSON БЕЗ ЛИШНЕГО ТЕКСТА:
+ПОСЛЕДНЕЕ СООБЩЕНИЕ ИГРОКА: "${playerQuestion}"
+
+ЖЕСТКИЕ ПРАВИЛА ЛОГИКИ И ПОВЕДЕНИЯ:
+1. ЕСЛИ ИГРОК НАЗВАЛ СВОЕГО ПЕРСОНАЖА:
+   Если игрок в сообщении прямо признался, кто он (например: «Я Тор», «Мой персонаж — Халк», «У меня Локи», «Я играю за Блейда»), НЕ ОТВЕЧАЙ "нет это не он". Игрок сказал это про СЕБЯ! ТЫ НЕМЕДЛЕННО ВЫИГРАЛ: найди этого персонажа, укажи его точный id в поле "guessId", а в "answer" радостно воскликни: "Ты сам признался! Твой персонаж — [Имя]! Я победил!".
+
+2. ЕСЛИ ИГРОК ЗАДАЛ ВОПРОС О ТВОЕМ ПЕРСОНАЖЕ:
+   Ответь честно («Да», «Нет» или краткое пояснение строго по приметам "${aiSecretChar?.name}").
+
+3. ТВОЙ ВСТРЕЧНЫЙ ВОПРОС И ДЕДУКЦИЯ:
+   - ВНИМАТЕЛЬНО ПРОЧТИ ИСТОРИЮ! СТРОГО ЗАПРЕЩЕНО задавать вопросы, которые ты уже задавал в прошлых ходах. Не повторяйся!
+   - Логически исключай персонажей по ответам игрока («Да/Нет»).
+   - Задавай вопросы по визуальным приметам (цвет костюма, человек ли он, злодей ли, носит ли шлем/маску, плащ, есть ли оружие, борода).
+   - Если после отсеивания у тебя остался ровно 1 кандидат или ты уверен на 90% — укажи его id в "guessId", чтобы сделать победную догадку!
+
+ОТВЕТЬ СТРОГО В ВИДЕ JSON:
 {
-  "answer": "твой ответ",
-  "aiQuestion": "твой встречный вопрос",
-  "guessId": null
+  "answer": "твой ответ на вопрос игрока",
+  "aiQuestion": "твой НОВЫЙ неповторяющийся вопрос игроку",
+  "guessId": null // или "id_персонажа"
 }
 `;
 
-  // Каскад моделей: если основная 3.8 перегружена, мгновенно подхватывает 3.1-flash-lite
-  const models = [
-    'gemini-3.8-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-3.5-flash',
-    'gemini-3.5-flash-lite'
-  ];
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  let lastError = '';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
+    });
 
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const data = await response.json();
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
-        })
+    if (data.error) {
+      return res.status(200).json({
+        answer: `Ошибка Google (gemini-3.8-flash): ${data.error.message}`,
+        aiQuestion: 'Твой герой мужчина?',
+        guessId: null
       });
-
-      const data = await response.json();
-
-      // Если модель перегружена (503 / high demand) или временно недоступна — сразу пробуем следующую
-      if (data.error) {
-        lastError = data.error.message;
-        continue;
-      }
-
-      // Извлекаем ответ (отсекая технические блоки мыслей)
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      const textPart = parts.find((p: any) => !p.thought && p.text) || parts[parts.length - 1];
-      const rawText = textPart?.text || '';
-
-      const cleanJson = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-      const start = cleanJson.indexOf('{');
-      const end = cleanJson.lastIndexOf('}');
-
-      if (start !== -1 && end !== -1) {
-        const parsed = JSON.parse(cleanJson.substring(start, end + 1));
-        return res.status(200).json(parsed);
-      }
-    } catch (err: any) {
-      lastError = err.message;
     }
-  }
 
-  return res.status(200).json({
-    answer: `Серверы Google временно перегружены: ${lastError}. Попробуйте отправить ещё раз через секунду.`,
-    aiQuestion: 'Твой герой носит маску?',
-    guessId: null
-  });
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const textPart = parts.find((p: any) => !p.thought && p.text) || parts[parts.length - 1];
+    const rawText = textPart?.text || '';
+
+    const cleanJson = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+    const start = cleanJson.indexOf('{');
+    const end = cleanJson.lastIndexOf('}');
+
+    if (start !== -1 && end !== -1) {
+      const parsed = JSON.parse(cleanJson.substring(start, end + 1));
+      return res.status(200).json(parsed);
+    }
+
+    throw new Error('Пустой ответ');
+  } catch (err: any) {
+    return res.status(200).json({
+      answer: `Ошибка: ${err.message}`,
+      aiQuestion: 'Твой персонаж носит плащ?',
+      guessId: null
+    });
+  }
 }
