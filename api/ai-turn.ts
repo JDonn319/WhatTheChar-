@@ -5,13 +5,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Считываем AI_API_KET (с подстраховкой на AI_API_KEY) и очищаем от пробелов и кавычек
-  let rawKey = process.env.AI_API_KET || process.env.AI_API_KEY || '';
+  // Считываем ключ AI_API_KEY (с авто-подстраховкой) и очищаем от кавычек/пробелов
+  let rawKey = process.env.AI_API_KEY || process.env.AI_API_KET || '';
   let apiKey = rawKey.trim().replace(/^["']|["']$/g, '');
 
   if (!apiKey) {
     return res.status(200).json({ 
-      answer: '⚠️ Ключ не найден! В Vercel переменная называется AI_API_KET или AI_API_KEY. Проверь Settings -> Environment Variables и сделай Redeploy.',
+      answer: '⚠️ Ключ AI_API_KEY не найден в Vercel! Зайди в Settings -> Environment Variables, убедись, что стоит галочка на Production, и нажми Redeploy.',
       aiQuestion: 'Твой герой носит маску?',
       guessId: null
     });
@@ -20,19 +20,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { aiSecretChar, charactersPool, chatHistory, playerQuestion } = req.body;
 
   const promptText = `
-Ты играешь в логическую дуэль «Угадай, кто?» (Guess Who) против игрока.
+Ты играешь в настольную логическую дуэль «Угадай, кто?» (Guess Who) против игрока.
 На игровом поле 36 персонажей: ${JSON.stringify(charactersPool?.map((c: any) => ({ id: c.id, name: c.name, traits: c.traits })))}.
 
 ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar?.name}".
 Его визуальные приметы: ${JSON.stringify(aiSecretChar?.traits)}.
 Его описание: "${aiSecretChar?.wiki}".
 
-ПРАВИЛА:
+ПРАВИЛА ИГРЫ:
 1. Вопрос игрока: "${playerQuestion}".
-2. Ответь предельно честно ("Да", "Нет" или краткий комментарий строго по приметам своего персонажа).
-3. Задай свой наводящий вопрос игроку о его секретном персонаже (или укажи id персонажа в guessId, если уверен на 95%).
+2. Ответь предельно честно ("Да", "Нет" или краткий комментарий строго по приметам твоего секретного персонажа).
+3. Задай свой наводящий вопрос игроку о его секретном персонаже (или укажи id персонажа в guessId, если уверен на 95%, что разгадал игрока).
 
-ФОРМАТ ОТВЕТА СТРОГО JSON:
+ОТВЕТЬ СТРОГО В JSON БЕЗ ЛИШНЕГО ТЕКСТА:
 {
   "answer": "твой ответ",
   "aiQuestion": "твой встречный вопрос",
@@ -65,12 +65,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const data = await response.json();
 
     if (data.error) {
-      const keyMasked = apiKey.length > 8 
-        ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)} (длина: ${apiKey.length})` 
-        : 'слишком короткий';
-
       return res.status(200).json({
-        answer: `Ошибка Google: ${data.error.message}\n\n[Проверка ключа AI_API_KET: ${keyMasked}]`,
+        answer: `Ошибка Google Gemini: ${data.error.message}`,
         aiQuestion: 'Твой герой мужчина?',
         guessId: null
       });
@@ -86,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   } catch (err: any) {
     return res.status(200).json({
-      answer: `Сбой связи с Gemini: ${err.message}`,
+      answer: `Сбой соединения с Gemini: ${err.message}`,
       aiQuestion: 'Твой персонаж носит плащ?',
       guessId: null
     });
