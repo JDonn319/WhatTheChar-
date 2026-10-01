@@ -21,7 +21,7 @@ export interface Character {
 
 export const CHARACTERS_DB: Character[] = [
   // ==========================================
-  // MARVEL (48 персонажей)
+  // 1. MARVEL (48 персонажей)
   // ==========================================
   {
     id: 'iron_man',
@@ -457,335 +457,7 @@ export const CHARACTERS_DB: Character[] = [
   },
 
   // ==========================================
-  // STAR WARS (36 персонажей)
-  // ==========================================
-  {
-    id: 'darth_vader',
-    name: 'Дарт Вейдер',
-    universe: 'star_wars',
-    avatar: '/characters/darth_vader.png',
-    shortDesc: 'Черная глянцевая броня ситха с респиратором.',
-    wiki: 'Повелитель ситхов в черном шлеме, мантии, с панелью на груди и красным мечом.',
-    traits: { mainColors: ['черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Лицо полностью скрыто респиратором, красный меч.' }
-  },
-  {
-    id: 'luke_skywalker',
-    name: 'Люк Скайуокер',
-    universe: 'star_wars',
-    avatar: '/characters/luke_skywalker.png',
-    shortDesc: 'Черный джедайский костюм и зеленый меч.',
-    wiki: 'Люк в черной тунике джедая, с перчаткой на правой руке и зеленым клинком.',
-    traits: { mainColors: ['черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Светлые волосы, без шлема, зеленый световой меч.' }
-  },
-  {
-    id: 'yoda',
-    name: 'Магистр Йода',
-    universe: 'star_wars',
-    avatar: '/characters/yoda.png',
-    shortDesc: 'Зеленый пришелец в бежевой мантии с тростью.',
-    wiki: 'Гранд-магистр с длинными заостренными ушами, седыми прядями и коричневой туникой.',
-    traits: { mainColors: ['зеленый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Маленький зеленый старец с большими ушами.' }
-  },
-  {
-    id: 'obi_wan',
-    name: 'Оби-Ван Кеноби',
-    universe: 'star_wars',
-    avatar: '/characters/obi_wan.png',
-    shortDesc: 'Бежевая роба джедая и синий световой меч.',
-    wiki: 'Мастер-джедай с рыжевато-русой бородой, открытым лицом и синим клинком Силы.',
-    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Рыжая борода, светлая туника, синий меч.' }
-  },
-  {
-    id: 'han_solo',
-    name: 'Хан Соло',
-    universe: 'star_wars',
-    avatar: '/characters/han_solo.png',
-    shortDesc: 'Белая рубаха, черная жилетка и бластер.',
-    wiki: 'Контрабандист в расстегнутой рубахе, черном жилете и с пистолетом-бластером DL-44.',
-    traits: { mainColors: ['белый', 'черный', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Черная жилетка, кобура на бедре, бластер в руке.' }
-  },
-  {
-    id: 'leia_organa',
-    name: 'Принцесса Лея',
-    universe: 'star_wars',
-    avatar: '/characters/leia_organa.png',
-    shortDesc: 'Белое струящееся платье и прическа-бублики.',
-    wiki: 'Принцесса в длинном белом платье с серебряным поясом и двумя круглыми пучками волос.',
-    traits: { mainColors: ['белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Женщина в белом платье, прическа «булочки» по бокам.' }
-  },
-  {
-    id: 'chewbacca',
-    name: 'Чубакка',
-    universe: 'star_wars',
-    avatar: '/characters/chewbacca.png',
-    shortDesc: 'Мохнатый вуки с кожаным патронташем.',
-    wiki: 'Высокий вуки, целиком покрытый коричневой шерстью, с серебристым арбалетом-бластером.',
-    traits: { mainColors: ['коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Всё тело в шерсти, ремень через плечо, тяжелый арбалет.' }
-  },
-  {
-    id: 'boba_fett',
-    name: 'Боба Фетт',
-    universe: 'star_wars',
-    avatar: '/characters/boba_fett.png',
-    shortDesc: 'Зеленый мандалорский шлем с Т-визором.',
-    wiki: 'Охотник за головами в зеленой броне, желтых наплечниках и ранцем за спиной.',
-    traits: { mainColors: ['зеленый', 'желтый', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Шлем мандалорца с дальномером, лицо скрыто.' }
-  },
-  {
-    id: 'palpatine',
-    name: 'Император Палпатин',
-    universe: 'star_wars',
-    avatar: '/characters/palpatine.png',
-    shortDesc: 'Черный балахон и синие молнии из рук.',
-    wiki: 'Морщинистый владыка ситхов в глубоком черном капюшоне, стреляющий молниями из пальцев.',
-    traits: { mainColors: ['черный'], hasHelmetOrMask: false, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: true, notes: 'Черный капюшон скрывает лоб, желтые глаза.' }
-  },
-  {
-    id: 'mandalorian',
-    name: 'Дин Джарин (Мандалорец)',
-    universe: 'star_wars',
-    avatar: '/characters/mandalorian.png',
-    shortDesc: 'Зеркальная броня из чистого бескара.',
-    wiki: 'Воин в серебристом металлическом шлеме, глухом визоре и коричневом плаще.',
-    traits: { mainColors: ['серебряный', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Блестящий хромированный шлем без лица.' }
-  },
-  {
-    id: 'grogu',
-    name: 'Грогу (Малыш)',
-    universe: 'star_wars',
-    avatar: '/characters/grogu.png',
-    shortDesc: 'Крошечный зеленый малыш в бежевой робе.',
-    wiki: 'Зеленый найденыш с гигантскими глазами и длинными ушами в теплой просторной кофте.',
-    traits: { mainColors: ['зеленый', 'бежевый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Крохотный размер, длинные уши, темные глаза.' }
-  },
-  {
-    id: 'ahsoka_tano',
-    name: 'Асока Тано',
-    universe: 'star_wars',
-    avatar: '/characters/ahsoka_tano.png',
-    shortDesc: 'Оранжевая кожа, бело-синие лекку и белые мечи.',
-    wiki: 'Тогрута с полосатыми отростками на голове, белыми узорами на лице и двумя белыми мечами.',
-    traits: { mainColors: ['оранжевый', 'синий', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Оранжевое лицо, длинные полосатые отростки волос.' }
-  },
-  {
-    id: 'darth_maul',
-    name: 'Дарт Мол',
-    universe: 'star_wars',
-    avatar: '/characters/darth_maul.png',
-    shortDesc: 'Красно-черные татуировки, рога и двойной меч.',
-    wiki: 'Забрак с рожками на черепе, раскрашенным лицом и двухсторонним красным световым клинком.',
-    traits: { mainColors: ['красный', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Красное лицо с черными узорами, рожки.' }
-  },
-  {
-    id: 'mace_windu',
-    name: 'Мейс Винду',
-    universe: 'star_wars',
-    avatar: '/characters/mace_windu.png',
-    shortDesc: 'Светлая туника джедая и фиолетовый меч.',
-    wiki: 'Лысый магистр Ордена в светлой робе с ярким фиолетовым световым мечом.',
-    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Лысая голова, открытое лицо, фиолетовый меч.' }
-  },
-  {
-    id: 'kylo_ren',
-    name: 'Кайло Рен',
-    universe: 'star_wars',
-    avatar: '/characters/kylo_ren.png',
-    shortDesc: 'Черная маска с серебром и меч с гардой.',
-    wiki: 'Рыцарь Рен в черном капюшоне, маске с серебряными линиями и крестообразным красным мечом.',
-    traits: { mainColors: ['черный', 'серебряный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Черная маска закрывает лицо, меч с зубьями.' }
-  },
-  {
-    id: 'rey_skywalker',
-    name: 'Рей Скайуокер',
-    universe: 'star_wars',
-    avatar: '/characters/rey_skywalker.png',
-    shortDesc: 'Светлые льняные повязки мусорщицы.',
-    wiki: 'Джедайка с тремя пучками на затылке, светлыми тканевыми полосами на теле и синим мечом.',
-    traits: { mainColors: ['белый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, прическа из трех узелков, световой меч.' }
-  },
-  {
-    id: 'anakin_skywalker',
-    name: 'Энакин Скайуокер',
-    universe: 'star_wars',
-    avatar: '/characters/anakin_skywalker.png',
-    shortDesc: 'Темно-коричневая кожаная туника со шрамом.',
-    wiki: 'Энакин из «Мести ситхов»: вьющиеся волосы, шрам на правом глазу, синий световой меч.',
-    traits: { mainColors: ['черный', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Шрам у правого глаза, волосы до плеч, синий меч.' }
-  },
-  {
-    id: 'general_grievous',
-    name: 'Генерал Гривус',
-    universe: 'star_wars',
-    avatar: '/characters/general_grievous.png',
-    shortDesc: 'Белый скелет-киборг с четырьмя мечами.',
-    wiki: 'Командующий дроидов с белой маской-черепом, четырьмя руками и четырьмя мечами.',
-    traits: { mainColors: ['белый', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Киборг с 4 руками, держит 4 световых меча.' }
-  },
-  {
-    id: 'count_dooku',
-    name: 'Граф Дуку',
-    universe: 'star_wars',
-    avatar: '/characters/count_dooku.png',
-    shortDesc: 'Коричневый плащ с цепочкой и изогнутый меч.',
-    wiki: 'Лорд Тиранус с благородной сединой, аккуратной бородой и мечом с изогнутой рукоятью.',
-    traits: { mainColors: ['коричневый', 'черный'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Седые волосы и бородка, изогнутый красный меч.' }
-  },
-  {
-    id: 'padme_amidala',
-    name: 'Падме Амидала',
-    universe: 'star_wars',
-    avatar: '/characters/padme_amidala.png',
-    shortDesc: 'Белый облегающий костюм с бластером.',
-    wiki: 'Сенатор Набу на арене Джеонозиса: белый костюм с открытым животом и пистолетом в руке.',
-    traits: { mainColors: ['белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, темные волосы в хвосте, белый костюм.' }
-  },
-  {
-    id: 'qui_gon_jinn',
-    name: 'Квай-Гон Джинн',
-    universe: 'star_wars',
-    avatar: '/characters/qui_gon_jinn.png',
-    shortDesc: 'Просторная туника джедая и длинные волосы.',
-    wiki: 'Учитель Оби-Вана с длинными каштановыми волосами, аккуратной бородой и зеленым клинком.',
-    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Длинные волосы назад, борода, зеленый меч.' }
-  },
-  {
-    id: 'lando_calrissian',
-    name: 'Лэндо Калриссиан',
-    universe: 'star_wars',
-    avatar: '/characters/lando_calrissian.png',
-    shortDesc: 'Синяя рубашка и стильный плащ с золотом.',
-    wiki: 'Барон Облачного города в синем костюме с атласным плащом и аккуратными усами.',
-    traits: { mainColors: ['синий', 'золотой'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Пышные усы, сине-золотой плащ.' }
-  },
-  {
-    id: 'finn',
-    name: 'Финн (FN-2187)',
-    universe: 'star_wars',
-    avatar: '/characters/finn.png',
-    shortDesc: 'Коричневая кожаная куртка с красной полосой.',
-    wiki: 'Бывший штурмовик в куртке По Дэмерона и темной футболке с бластером в руках.',
-    traits: { mainColors: ['коричневый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Короткая стрижка, куртка с красными вставками.' }
-  },
-  {
-    id: 'stormtrooper',
-    name: 'Имперский Штурмовик',
-    universe: 'star_wars',
-    avatar: '/characters/stormtrooper.png',
-    shortDesc: 'Белая составная пластиковая броня и шлем.',
-    wiki: 'Солдат Империи в чисто-белой кирасе, закрытом белом шлеме и с черным карабином.',
-    traits: { mainColors: ['белый', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Белый шлем с черной полосой, лица не видно.' }
-  },
-  {
-    id: 'c3po',
-    name: 'C-3PO',
-    universe: 'star_wars',
-    avatar: '/characters/c3po.png',
-    shortDesc: 'Золотой металлический корпус дроида.',
-    wiki: 'Протокольный дроид из чистого золота со светящимися круглыми фоторецепторами.',
-    traits: { mainColors: ['золотой'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Полностью золотой дроид, лицо из металла.' }
-  },
-  {
-    id: 'r2d2',
-    name: 'R2-D2',
-    universe: 'star_wars',
-    avatar: '/characters/r2d2.png',
-    shortDesc: 'Бело-синий куполообразный астродроид.',
-    wiki: 'Преданный механический напарник Люка на трех колесных опорах с синей отделкой.',
-    traits: { mainColors: ['белый', 'синий', 'серебряный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Бочонок-дроид с куполом, нет человеческого тела.' }
-  },
-  {
-    id: 'jabba_the_hutt',
-    name: 'Джабба Хатт',
-    universe: 'star_wars',
-    avatar: '/characters/jabba_the_hutt.png',
-    shortDesc: 'Гигантский зеленый слизень-криминал.',
-    wiki: 'Огромный владыка преступного мира Татуина с массивным хвостом и оранжевыми глазами.',
-    traits: { mainColors: ['зеленый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Огромный толстый слизень без одежды.' }
-  },
-  {
-    id: 'tarkin',
-    name: 'Гранд-мофф Таркин',
-    universe: 'star_wars',
-    avatar: '/characters/tarkin.png',
-    shortDesc: 'Серый имперский мундир офицера.',
-    wiki: 'Командующий Звезды Смерти с ледяным взглядом, впалыми щеками и седыми висками.',
-    traits: { mainColors: ['серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: true, notes: 'Серый строгий китель, худощавое бледное лицо.' }
-  },
-  {
-    id: 'cassian_andor',
-    name: 'Кассиан Андор',
-    universe: 'star_wars',
-    avatar: '/characters/cassian_andor.png',
-    shortDesc: 'Коричневая полевая куртка разведчика.',
-    wiki: 'Капитан разведки Повстанцев с темной щетиной, каштановыми волосами и бластером.',
-    traits: { mainColors: ['коричневый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Открытое лицо с легкой щетиной, теплая куртка.' }
-  },
-  {
-    id: 'jyn_erso',
-    name: 'Джин Эрсо',
-    universe: 'star_wars',
-    avatar: '/characters/jyn_erso.png',
-    shortDesc: 'Тактический жилет и темный шарф.',
-    wiki: 'Лидер отряда Изгой-один, похитившая чертежи Звезды Смерти на Скарифе.',
-    traits: { mainColors: ['зеленый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, шарф на шее, пистолет-бластер в руке.' }
-  },
-  {
-    id: 'cad_bane',
-    name: 'Кэд Бэйн',
-    universe: 'star_wars',
-    avatar: '/characters/cad_bane.png',
-    shortDesc: 'Синяя кожа, ковбойская шляпа и трубки.',
-    wiki: 'Охотник на джедаев с широкополой шляпой, красными глазами и дыхательными шлангами.',
-    traits: { mainColors: ['синий', 'коричневый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Широкая шляпа, синее лицо с дыхательными трубками.' }
-  },
-  {
-    id: 'asajj_ventress',
-    name: 'Асажж Вентресс',
-    universe: 'star_wars',
-    avatar: '/characters/asajj_ventress.png',
-    shortDesc: 'Бледно-серая лысая ассасинка с 2 мечами.',
-    wiki: 'Темная ученица графа Дуку в облегающем корсете с двумя изогнутыми красными мечами.',
-    traits: { mainColors: ['серый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Женщина, лысая бледная голова, два красных меча.' }
-  },
-  {
-    id: 'captain_rex',
-    name: 'Капитан Рекс (CT-7567)',
-    universe: 'star_wars',
-    avatar: '/characters/captain_rex.png',
-    shortDesc: 'Белая броня клона с синей маркировкой.',
-    wiki: 'Легендарный командир 501-го легиона в шлеме с Т-визором и двумя пистолетами.',
-    traits: { mainColors: ['белый', 'синий'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Шлем клона с синими полосами, два бластера.' }
-  },
-  {
-    id: 'bo_katan',
-    name: 'Бо-Катан Крайз',
-    universe: 'star_wars',
-    avatar: '/characters/bo_katan.png',
-    shortDesc: 'Синяя мандалорская броня с совой.',
-    wiki: 'Лидер Ночных Сов с короткими рыжими волосами и сине-серым шлемом из бескара.',
-    traits: { mainColors: ['синий', 'серый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, синий шлем с совиными узорами.' }
-  },
-  {
-    id: 'poe_dameron',
-    name: 'По Дэмерон',
-    universe: 'star_wars',
-    avatar: '/characters/poe_dameron.png',
-    shortDesc: 'Оранжевый комбинезон пилота X-Wing.',
-    wiki: 'Лучший ас Сопротивления в ярко-оранжевой форме пилота с белым нагрудным блоком.',
-    traits: { mainColors: ['оранжевый', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Оранжевая форма пилота, темные кудри со щетиной.' }
-  },
-  {
-    id: 'thrawn',
-    name: 'Гранд-адмирал Траун',
-    universe: 'star_wars',
-    avatar: '/characters/thrawn.png',
-    shortDesc: 'Синяя кожа, горящие красные глаза и мундир.',
-    wiki: 'Гениальный стратег расы чиссов в чисто-белом парадном кителе Империи с эполетами.',
-    traits: { mainColors: ['белый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Синее лицо, горящие красные зрачки, белый китель.' }
-  },
-
-  // ==========================================
-  // THE BOYS (36 персонажей)
+  // 2. THE BOYS (48 персонажей — Накиб включен)
   // ==========================================
   {
     id: 'homelander',
@@ -1111,9 +783,117 @@ export const CHARACTERS_DB: Character[] = [
     wiki: 'Отчим Дженнифер, ставший фанатичным сторонником Хоумлендера в толпе.',
     traits: { mainColors: ['красный', 'синий'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Красная кепка на голове, очки, футболка с принтом.' }
   },
+  {
+    id: 'black_noir_ii',
+    name: 'Чёрный Нуар II',
+    universe: 'the_boys',
+    avatar: '/characters/black_noir_ii.png',
+    shortDesc: 'Новый актер в броне Нуара с серебряными вставками.',
+    wiki: 'Новый Чёрный Нуар из 4 сезона, испытывающий приступы нарколепсии и говорящий вслух.',
+    traits: { mainColors: ['черный', 'серебряный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Глянцевая черная броня с серебряными наплечниками, закрытый шлем.' }
+  },
+  {
+    id: 'grace_mallory',
+    name: 'Грейс Мэллори',
+    universe: 'the_boys',
+    avatar: '/characters/grace_mallory.png',
+    shortDesc: 'Основательница Пацанов с короткой седой стрижкой.',
+    wiki: 'Бывший замдиректора ЦРУ, начавшая тайную войну против корпорации Vought.',
+    traits: { mainColors: ['черный', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, седые короткие волосы, строгая темная одежда.' }
+  },
+  {
+    id: 'becca_butcher',
+    name: 'Бекка Бутчер',
+    universe: 'the_boys',
+    avatar: '/characters/becca_butcher.png',
+    shortDesc: 'Жена Бутчера и мать Райана.',
+    wiki: 'Жена Билли Бутчера, тайно воспитывавшая сына Хоумлендера в закрытом городке Vought.',
+    traits: { mainColors: ['синий', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Женщина, русые волосы до плеч, светлый кардиган.' }
+  },
+  {
+    id: 'mesmer',
+    name: 'Месмер',
+    universe: 'the_boys',
+    avatar: '/characters/mesmer.png',
+    shortDesc: 'Бывшая звезда, читающая мысли прикосновением руки.',
+    wiki: 'Супергерой с угасшей славой, продавший Пацанов Хоумлендеру ради свиданий с дочерью.',
+    traits: { mainColors: ['коричневый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Мужчина в бежевой куртке, темная щетина, открытые ладони.' }
+  },
+  {
+    id: 'shockwave',
+    name: 'Взрывная Волна',
+    universe: 'the_boys',
+    avatar: '/characters/shockwave.png',
+    shortDesc: 'Спидстер-соперник Поезда-А в синем шлеме.',
+    wiki: 'Главный соперник Поезда-А в забеге на звание быстрейшего человека в мире.',
+    traits: { mainColors: ['синий', 'желтый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Синий шлем спидстера с желтыми молниями, спортивное трико.' }
+  },
+  {
+    id: 'ezechiel',
+    name: 'Иезекииль',
+    universe: 'the_boys',
+    avatar: '/characters/ezechiel.png',
+    shortDesc: 'Эластичный проповедник в пасторском костюме.',
+    wiki: 'Религиозный супергерой, умеющий растягивать свои конечности словно резину.',
+    traits: { mainColors: ['черный', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Пасторский костюм с белым воротничком, растянутые руки.' }
+  },
+  {
+    id: 'gecko',
+    name: 'Геккон',
+    universe: 'the_boys',
+    avatar: '/characters/gecko.png',
+    shortDesc: 'Сотрудник лаборатории с регенерацией конечностей.',
+    wiki: 'Супер из лаборатории Vought, отращивающий любые отрезанные части тела.',
+    traits: { mainColors: ['белый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Белый лабораторный халат, очки на носу.' }
+  },
+  {
+    id: 'splinter',
+    name: 'Сплинтер',
+    universe: 'the_boys',
+    avatar: '/characters/splinter.png',
+    shortDesc: 'Супергерой, клонирующий себя при прикосновении.',
+    wiki: 'Последователь Сестры Сэйдж, способный отделять от своего тела идентичных взрослых клонов.',
+    traits: { mainColors: ['черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Темная спортивная форма, несколько одинаковых лиц.' }
+  },
+  {
+    id: 'mindstorm',
+    name: 'Майндшторм',
+    universe: 'the_boys',
+    avatar: '/characters/mindstorm.png',
+    shortDesc: 'Телепат из Расплаты в солдатской каске.',
+    wiki: 'Бывший член команды Солдатика, погружающий людей в бесконечный кошмар взглядом.',
+    traits: { mainColors: ['зеленый', 'коричневый'], hasHelmetOrMask: true, hasCape: false, hasBeard: true, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Военная каска с сеткой, солнцезащитные очки, борода.' }
+  },
+  {
+    id: 'naqib',
+    name: 'Накиб',
+    universe: 'the_boys',
+    avatar: '/characters/naqib.png',
+    shortDesc: 'Супер-террорист, взрывающий себя мощной волной.',
+    wiki: 'Сирийский супертеррорист, получивший сыворотку V. Способен создавать мощнейшие кинетико-огненные взрывы вокруг своего тела.',
+    traits: { mainColors: ['коричневый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Густая темная борода, восточная одежда, взрывное огненное пламя.' }
+  },
+  {
+    id: 'cate_dunlap',
+    name: 'Кейт Данлэп',
+    universe: 'the_boys',
+    avatar: '/characters/cate_dunlap.png',
+    shortDesc: 'Телепатка из Годолкина, внушающая приказы касанием.',
+    wiki: 'Студентка, заставляющая людей исполнять любые команды после прямого касания ладонью.',
+    traits: { mainColors: ['белый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Женщина, светлые волосы, кожаные перчатки без пальцев.' }
+  },
+  {
+    id: 'webweaver',
+    name: 'Паутина (Вебвивер)',
+    universe: 'the_boys',
+    avatar: '/characters/webweaver.png',
+    shortDesc: 'Супер в сине-зеленом паучьем костюме с лапами.',
+    wiki: 'Супергерой-паук с тяжелой зависимостью, стреляющий органической паутиной из поясницы.',
+    traits: { mainColors: ['зеленый', 'синий'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Костюм с узором паутины, закрытая маска, паучьи лапы за спиной.' }
+  },
 
   // ==========================================
-  // INVINCIBLE (36 персонажей)
+  // 3. INVINCIBLE (48 персонажей)
   // ==========================================
   {
     id: 'omni_man',
@@ -1438,6 +1218,442 @@ export const CHARACTERS_DB: Character[] = [
     shortDesc: 'Монстр из пылающей лавы и камня.',
     wiki: 'Подземный великан, состоящий из растрескавшейся базальтовой коры и кипящей магмы.',
     traits: { mainColors: ['оранжевый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Пылающее лавовое тело с черными камнями.' }
+  },
+  {
+    id: 'debbie_grayson',
+    name: 'Дебби Грейсон',
+    universe: 'invincible',
+    avatar: '/characters/debbie_grayson.png',
+    shortDesc: 'Мать Марка и жена Омни-Мэна.',
+    wiki: 'Обычная женщина, риэлтор, пережившая предательство мужа и поддерживающая Марка.',
+    traits: { mainColors: ['коричневый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Женщина, каштановые волосы, открытое доброе лицо.' }
+  },
+  {
+    id: 'william_clockwell',
+    name: 'Уильям Клокуэлл',
+    universe: 'invincible',
+    avatar: '/characters/william_clockwell.png',
+    shortDesc: 'Лучший друг Марка в школе и колледже.',
+    wiki: 'Близкий друг Марка, знающий его тайну личности и помогающий не сойти с ума.',
+    traits: { mainColors: ['желтый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Светлые короткие волосы, худи, без бороды.' }
+  },
+  {
+    id: 'amber_bennett',
+    name: 'Эмбер Беннетт',
+    universe: 'invincible',
+    avatar: '/characters/amber_bennett.png',
+    shortDesc: 'Первая девушка Марка Грейсона.',
+    wiki: 'Школьная активистка с кудрявыми волосами, догадавшаяся о супергеройской тайне Марка.',
+    traits: { mainColors: ['синий', 'зеленый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Женщина, пышные темные кудри, джинсовая куртка.' }
+  },
+  {
+    id: 'donald_ferguson',
+    name: 'Дональд Фергюсон',
+    universe: 'invincible',
+    avatar: '/characters/donald_ferguson.png',
+    shortDesc: 'Правая рука Сесила, киборг Агентства.',
+    wiki: 'Преданный агент Сесила Стедмана, чье тело было многократно восстановлено кибернетикой.',
+    traits: { mainColors: ['серый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Серый деловой костюм, очки в черной оправе.' }
+  },
+  {
+    id: 'da_sinclair',
+    name: 'Д.А. Синклер',
+    universe: 'invincible',
+    avatar: '/characters/da_sinclair.png',
+    shortDesc: 'Безумный создатель зомби-киборгов Реаниманов.',
+    wiki: 'Гениальный ученый, похищавший студентов университета для создания идеальных солдат.',
+    traits: { mainColors: ['белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: true, notes: 'Белый халат, круглые очки, взъерошенные темные волосы.' }
+  },
+  {
+    id: 'reaniman',
+    name: 'Реанимен',
+    universe: 'invincible',
+    avatar: '/characters/reaniman.png',
+    shortDesc: 'Кибернетический бронированный зомби-солдат.',
+    wiki: 'Бесчувственная боевая машина из человеческих останков в тяжелых металлических латах.',
+    traits: { mainColors: ['серый', 'красный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Тяжелый серый шлем, один горизонтальный красный визор.' }
+  },
+  {
+    id: 'flaxan_leader',
+    name: 'Лидер Флаксанцев',
+    universe: 'invincible',
+    avatar: '/characters/flaxan_leader.png',
+    shortDesc: 'Военачальник пришельцев в золотых доспехах.',
+    wiki: 'Командующий вторжением из измерения Флакса, где время течет в тысячи раз быстрее.',
+    traits: { mainColors: ['золотой', 'красный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Золотые тяжелые латы, шлем с забралом, инопланетянин.' }
+  },
+  {
+    id: 'rus_livingston',
+    name: 'Руслан Ливингстон (Секвидды)',
+    universe: 'invincible',
+    avatar: '/characters/rus_livingston.png',
+    shortDesc: 'Астронавт, захваченный роем Секвиддов.',
+    wiki: 'Земной астронавт, ставший единым разумом для миллионов инопланетных паразитов.',
+    traits: { mainColors: ['белый', 'розовый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Скафандр астронавта, покрытый шевелящимися розовыми кальмарами.' }
+  },
+  {
+    id: 'powerplex',
+    name: 'Пауэрплекс (Скотт Дюваль)',
+    universe: 'invincible',
+    avatar: '/characters/powerplex.png',
+    shortDesc: 'Электрический суперзлодей в желтом костюме.',
+    wiki: 'Супер, поглощающий кинетическую энергию ударов и возвращающий ее в виде мощных молний.',
+    traits: { mainColors: ['желтый', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Желто-черный костюм, ветвящиеся синие молнии вокруг рук.' }
+  },
+  {
+    id: 'darkwing_ii',
+    name: 'Темнокрыл II (Ночной Боец)',
+    universe: 'invincible',
+    avatar: '/characters/darkwing_ii.png',
+    shortDesc: 'Преемник Темнокрыла, управляющий тенями.',
+    wiki: 'Протеже оригинального Темнокрыла, погружающий врагов в вечную тьму Теневой Вселенной.',
+    traits: { mainColors: ['черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Черный рваный плащ, светящиеся красные линзы на маске.' }
+  },
+  {
+    id: 'kursk',
+    name: 'Курск',
+    universe: 'invincible',
+    avatar: '/characters/kursk.png',
+    shortDesc: 'Русский электро-злодей в синем костюме.',
+    wiki: 'Наемник на службе преступных синдикатов, мечущий смертоносные электрические дуги.',
+    traits: { mainColors: ['синий', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Синий костюм с черной полумаской, электричество на пальцах.' }
+  },
+  {
+    id: 'furnace',
+    name: 'Печь (Фёрнес)',
+    universe: 'invincible',
+    avatar: '/characters/furnace.png',
+    shortDesc: 'Киборг-печь с раскаленным пламенем внутри.',
+    wiki: 'Преступник в массивном чугунном экзоскелете, выпускающий раскаленный пар и жидкий огонь.',
+    traits: { mainColors: ['серый', 'оранжевый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Чугунная броня с решеткой на груди, сквозь которую пылает огонь.' }
+  },
+
+  // ==========================================
+  // 4. STAR WARS (36 персонажей)
+  // ==========================================
+  {
+    id: 'darth_vader',
+    name: 'Дарт Вейдер',
+    universe: 'star_wars',
+    avatar: '/characters/darth_vader.png',
+    shortDesc: 'Черная глянцевая броня ситха с респиратором.',
+    wiki: 'Повелитель ситхов в черном шлеме, мантии, с панелью на груди и красным мечом.',
+    traits: { mainColors: ['черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Лицо полностью скрыто респиратором, красный меч.' }
+  },
+  {
+    id: 'luke_skywalker',
+    name: 'Люк Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/luke_skywalker.png',
+    shortDesc: 'Черный джедайский костюм и зеленый меч.',
+    wiki: 'Люк в черной тунике джедая, с перчаткой на правой руке и зеленым клинком.',
+    traits: { mainColors: ['черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Светлые волосы, без шлема, зеленый световой меч.' }
+  },
+  {
+    id: 'yoda',
+    name: 'Магистр Йода',
+    universe: 'star_wars',
+    avatar: '/characters/yoda.png',
+    shortDesc: 'Зеленый пришелец в бежевой мантии с тростью.',
+    wiki: 'Гранд-магистр с длинными заостренными ушами, седыми прядями и коричневой туникой.',
+    traits: { mainColors: ['зеленый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Маленький зеленый старец с большими ушами.' }
+  },
+  {
+    id: 'obi_wan',
+    name: 'Оби-Ван Кеноби',
+    universe: 'star_wars',
+    avatar: '/characters/obi_wan.png',
+    shortDesc: 'Бежевая роба джедая и синий световой меч.',
+    wiki: 'Мастер-джедай с рыжевато-русой бородой, открытым лицом и синим клинком Силы.',
+    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Рыжая борода, светлая туника, синий меч.' }
+  },
+  {
+    id: 'han_solo',
+    name: 'Хан Соло',
+    universe: 'star_wars',
+    avatar: '/characters/han_solo.png',
+    shortDesc: 'Белая рубаха, черная жилетка и бластер.',
+    wiki: 'Контрабандист в расстегнутой рубахе, черном жилете и с пистолетом-бластером DL-44.',
+    traits: { mainColors: ['белый', 'черный', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Черная жилетка, кобура на бедре, бластер в руке.' }
+  },
+  {
+    id: 'leia_organa',
+    name: 'Принцесса Лея',
+    universe: 'star_wars',
+    avatar: '/characters/leia_organa.png',
+    shortDesc: 'Белое струящееся платье и прическа-бублики.',
+    wiki: 'Принцесса в длинном белом платье с серебряным поясом и двумя круглыми пучками волос.',
+    traits: { mainColors: ['белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Женщина в белом платье, прическа «булочки» по бокам.' }
+  },
+  {
+    id: 'chewbacca',
+    name: 'Чубакка',
+    universe: 'star_wars',
+    avatar: '/characters/chewbacca.png',
+    shortDesc: 'Мохнатый вуки с кожаным патронташем.',
+    wiki: 'Высокий вуки, целиком покрытый коричневой шерстью, с серебристым арбалетом-бластером.',
+    traits: { mainColors: ['коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Всё тело в шерсти, ремень через плечо, тяжелый арбалет.' }
+  },
+  {
+    id: 'boba_fett',
+    name: 'Боба Фетт',
+    universe: 'star_wars',
+    avatar: '/characters/boba_fett.png',
+    shortDesc: 'Зеленый мандалорский шлем с Т-визором.',
+    wiki: 'Охотник за головами в зеленой броне, желтых наплечниках и ранцем за спиной.',
+    traits: { mainColors: ['зеленый', 'желтый', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Шлем мандалорца с дальномером, лицо скрыто.' }
+  },
+  {
+    id: 'palpatine',
+    name: 'Император Палпатин',
+    universe: 'star_wars',
+    avatar: '/characters/palpatine.png',
+    shortDesc: 'Черный балахон и синие молнии из рук.',
+    wiki: 'Морщинистый владыка ситхов в глубоком черном капюшоне, стреляющий молниями из пальцев.',
+    traits: { mainColors: ['черный'], hasHelmetOrMask: false, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: true, notes: 'Черный капюшон скрывает лоб, желтые глаза.' }
+  },
+  {
+    id: 'mandalorian',
+    name: 'Дин Джарин (Мандалорец)',
+    universe: 'star_wars',
+    avatar: '/characters/mandalorian.png',
+    shortDesc: 'Зеркальная броня из чистого бескара.',
+    wiki: 'Воин в серебристом металлическом шлеме, глухом визоре и коричневом плаще.',
+    traits: { mainColors: ['серебряный', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Блестящий хромированный шлем без лица.' }
+  },
+  {
+    id: 'grogu',
+    name: 'Грогу (Малыш)',
+    universe: 'star_wars',
+    avatar: '/characters/grogu.png',
+    shortDesc: 'Крошечный зеленый малыш в бежевой робе.',
+    wiki: 'Зеленый найденыш с гигантскими глазами и длинными ушами в теплой просторной кофте.',
+    traits: { mainColors: ['зеленый', 'бежевый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Крохотный размер, длинные уши, темные глаза.' }
+  },
+  {
+    id: 'ahsoka_tano',
+    name: 'Асока Тано',
+    universe: 'star_wars',
+    avatar: '/characters/ahsoka_tano.png',
+    shortDesc: 'Оранжевая кожа, бело-синие лекку и белые мечи.',
+    wiki: 'Тогрута с полосатыми отростками на голове, белыми узорами на лице и двумя белыми мечами.',
+    traits: { mainColors: ['оранжевый', 'синий', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Оранжевое лицо, длинные полосатые отростки волос.' }
+  },
+  {
+    id: 'darth_maul',
+    name: 'Дарт Мол',
+    universe: 'star_wars',
+    avatar: '/characters/darth_maul.png',
+    shortDesc: 'Красно-черные татуировки, рога и двойной меч.',
+    wiki: 'Забрак с рожками на черепе, раскрашенным лицом и двухсторонним красным световым клинком.',
+    traits: { mainColors: ['красный', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Красное лицо с черными узорами, рожки.' }
+  },
+  {
+    id: 'mace_windu',
+    name: 'Мейс Винду',
+    universe: 'star_wars',
+    avatar: '/characters/mace_windu.png',
+    shortDesc: 'Светлая туника джедая и фиолетовый меч.',
+    wiki: 'Лысый магистр Ордена в светлой робе с ярким фиолетовым световым мечом.',
+    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Лысая голова, открытое лицо, фиолетовый меч.' }
+  },
+  {
+    id: 'kylo_ren',
+    name: 'Кайло Рен',
+    universe: 'star_wars',
+    avatar: '/characters/kylo_ren.png',
+    shortDesc: 'Черная маска с серебром и меч с гардой.',
+    wiki: 'Рыцарь Рен в черном капюшоне, маске с серебряными линиями и крестообразным красным мечом.',
+    traits: { mainColors: ['черный', 'серебряный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Черная маска закрывает лицо, меч с зубьями.' }
+  },
+  {
+    id: 'rey_skywalker',
+    name: 'Рей Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/rey_skywalker.png',
+    shortDesc: 'Светлые льняные повязки мусорщицы.',
+    wiki: 'Джедайка с тремя пучками на затылке, светлыми тканевыми полосами на теле и синим мечом.',
+    traits: { mainColors: ['белый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, прическа из трех узелков, световой меч.' }
+  },
+  {
+    id: 'anakin_skywalker',
+    name: 'Энакин Скайуокер',
+    universe: 'star_wars',
+    avatar: '/characters/anakin_skywalker.png',
+    shortDesc: 'Темно-коричневая кожаная туника со шрамом.',
+    wiki: 'Энакин из «Мести ситхов»: вьющиеся волосы, шрам на правом глазу, синий световой меч.',
+    traits: { mainColors: ['черный', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Шрам у правого глаза, волосы до плеч, синий меч.' }
+  },
+  {
+    id: 'general_grievous',
+    name: 'Генерал Гривус',
+    universe: 'star_wars',
+    avatar: '/characters/general_grievous.png',
+    shortDesc: 'Белый скелет-киборг с четырьмя мечами.',
+    wiki: 'Командующий дроидов с белой маской-черепом, четырьмя руками и четырьмя мечами.',
+    traits: { mainColors: ['белый', 'серый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Киборг с 4 руками, держит 4 световых меча.' }
+  },
+  {
+    id: 'count_dooku',
+    name: 'Граф Дуку',
+    universe: 'star_wars',
+    avatar: '/characters/count_dooku.png',
+    shortDesc: 'Коричневый плащ с цепочкой и изогнутый меч.',
+    wiki: 'Лорд Тиранус с благородной сединой, аккуратной бородой и мечом с изогнутой рукоятью.',
+    traits: { mainColors: ['коричневый', 'черный'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Седые волосы и бородка, изогнутый красный меч.' }
+  },
+  {
+    id: 'padme_amidala',
+    name: 'Падме Амидала',
+    universe: 'star_wars',
+    avatar: '/characters/padme_amidala.png',
+    shortDesc: 'Белый облегающий костюм с бластером.',
+    wiki: 'Сенатор Набу на арене Джеонозиса: белый костюм с открытым животом и пистолетом в руке.',
+    traits: { mainColors: ['белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, темные волосы в хвосте, белый костюм.' }
+  },
+  {
+    id: 'qui_gon_jinn',
+    name: 'Квай-Гон Джинн',
+    universe: 'star_wars',
+    avatar: '/characters/qui_gon_jinn.png',
+    shortDesc: 'Просторная туника джедая и длинные волосы.',
+    wiki: 'Учитель Оби-Вана с длинными каштановыми волосами, аккуратной бородой и зеленым клинком.',
+    traits: { mainColors: ['бежевый', 'коричневый'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Длинные волосы назад, борода, зеленый меч.' }
+  },
+  {
+    id: 'lando_calrissian',
+    name: 'Лэндо Калриссиан',
+    universe: 'star_wars',
+    avatar: '/characters/lando_calrissian.png',
+    shortDesc: 'Синяя рубашка и стильный плащ с золотом.',
+    wiki: 'Барон Облачного города в синем костюме с атласным плащом и аккуратными усами.',
+    traits: { mainColors: ['синий', 'золотой'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Пышные усы, сине-золотой плащ.' }
+  },
+  {
+    id: 'finn',
+    name: 'Финн (FN-2187)',
+    universe: 'star_wars',
+    avatar: '/characters/finn.png',
+    shortDesc: 'Коричневая кожаная куртка с красной полосой.',
+    wiki: 'Бывший штурмовик в куртке По Дэмерона и темной футболке с бластером в руках.',
+    traits: { mainColors: ['коричневый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Короткая стрижка, куртка с красными вставками.' }
+  },
+  {
+    id: 'stormtrooper',
+    name: 'Имперский Штурмовик',
+    universe: 'star_wars',
+    avatar: '/characters/stormtrooper.png',
+    shortDesc: 'Белая составная пластиковая броня и шлем.',
+    wiki: 'Солдат Империи в чисто-белой кирасе, закрытом белом шлеме и с черным карабином.',
+    traits: { mainColors: ['белый', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Белый шлем с черной полосой, лица не видно.' }
+  },
+  {
+    id: 'c3po',
+    name: 'C-3PO',
+    universe: 'star_wars',
+    avatar: '/characters/c3po.png',
+    shortDesc: 'Золотой металлический корпус дроида.',
+    wiki: 'Протокольный дроид из чистого золота со светящимися круглыми фоторецепторами.',
+    traits: { mainColors: ['золотой'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Полностью золотой дроид, лицо из металла.' }
+  },
+  {
+    id: 'r2d2',
+    name: 'R2-D2',
+    universe: 'star_wars',
+    avatar: '/characters/r2d2.png',
+    shortDesc: 'Бело-синий куполообразный астродроид.',
+    wiki: 'Преданный механический напарник Люка на трех колесных опорах с синей отделкой.',
+    traits: { mainColors: ['белый', 'синий', 'серебряный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Бочонок-дроид с куполом, нет человеческого тела.' }
+  },
+  {
+    id: 'jabba_the_hutt',
+    name: 'Джабба Хатт',
+    universe: 'star_wars',
+    avatar: '/characters/jabba_the_hutt.png',
+    shortDesc: 'Гигантский зеленый слизень-криминал.',
+    wiki: 'Огромный владыка преступного мира Татуина с массивным хвостом и оранжевыми глазами.',
+    traits: { mainColors: ['зеленый', 'коричневый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Огромный толстый слизень без одежды.' }
+  },
+  {
+    id: 'tarkin',
+    name: 'Гранд-мофф Таркин',
+    universe: 'star_wars',
+    avatar: '/characters/tarkin.png',
+    shortDesc: 'Серый имперский мундир офицера.',
+    wiki: 'Командующий Звезды Смерти с ледяным взглядом, впалыми щеками и седыми висками.',
+    traits: { mainColors: ['серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: true, notes: 'Серый строгий китель, худощавое бледное лицо.' }
+  },
+  {
+    id: 'cassian_andor',
+    name: 'Кассиан Андор',
+    universe: 'star_wars',
+    avatar: '/characters/cassian_andor.png',
+    shortDesc: 'Коричневая полевая куртка разведчика.',
+    wiki: 'Капитан разведки Повстанцев с темной щетиной, каштановыми волосами и бластером.',
+    traits: { mainColors: ['коричневый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Открытое лицо с легкой щетиной, теплая куртка.' }
+  },
+  {
+    id: 'jyn_erso',
+    name: 'Джин Эрсо',
+    universe: 'star_wars',
+    avatar: '/characters/jyn_erso.png',
+    shortDesc: 'Тактический жилет и темный шарф.',
+    wiki: 'Лидер отряда Изгой-один, похитившая чертежи Звезды Смерти на Скарифе.',
+    traits: { mainColors: ['зеленый', 'серый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, шарф на шее, пистолет-бластер в руке.' }
+  },
+  {
+    id: 'cad_bane',
+    name: 'Кэд Бэйн',
+    universe: 'star_wars',
+    avatar: '/characters/cad_bane.png',
+    shortDesc: 'Синяя кожа, ковбойская шляпа и трубки.',
+    wiki: 'Охотник на джедаев с широкополой шляпой, красными глазами и дыхательными шлангами.',
+    traits: { mainColors: ['синий', 'коричневый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Широкая шляпа, синее лицо с дыхательными трубками.' }
+  },
+  {
+    id: 'asajj_ventress',
+    name: 'Асажж Вентресс',
+    universe: 'star_wars',
+    avatar: '/characters/asajj_ventress.png',
+    shortDesc: 'Бледно-серая лысая ассасинка с 2 мечами.',
+    wiki: 'Темная ученица графа Дуку в облегающем корсете с двумя изогнутыми красными мечами.',
+    traits: { mainColors: ['серый', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Женщина, лысая бледная голова, два красных меча.' }
+  },
+  {
+    id: 'captain_rex',
+    name: 'Капитан Рекс (CT-7567)',
+    universe: 'star_wars',
+    avatar: '/characters/captain_rex.png',
+    shortDesc: 'Белая броня клона с синей маркировкой.',
+    wiki: 'Легендарный командир 501-го легиона в шлеме с Т-визором и двумя пистолетами.',
+    traits: { mainColors: ['белый', 'синий'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Шлем клона с синими полосами, два бластера.' }
+  },
+  {
+    id: 'bo_katan',
+    name: 'Бо-Катан Крайз',
+    universe: 'star_wars',
+    avatar: '/characters/bo_katan.png',
+    shortDesc: 'Синяя мандалорская броня с совой.',
+    wiki: 'Лидер Ночных Сов с короткими рыжими волосами и сине-серым шлемом из бескара.',
+    traits: { mainColors: ['синий', 'серый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: false, notes: 'Женщина, синий шлем с совиными узорами.' }
+  },
+  {
+    id: 'poe_dameron',
+    name: 'По Дэмерон',
+    universe: 'star_wars',
+    avatar: '/characters/poe_dameron.png',
+    shortDesc: 'Оранжевый комбинезон пилота X-Wing.',
+    wiki: 'Лучший ас Сопротивления в ярко-оранжевой форме пилота с белым нагрудным блоком.',
+    traits: { mainColors: ['оранжевый', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Оранжевая форма пилота, темные кудри со щетиной.' }
+  },
+  {
+    id: 'thrawn',
+    name: 'Гранд-адмирал Траун',
+    universe: 'star_wars',
+    avatar: '/characters/thrawn.png',
+    shortDesc: 'Синяя кожа, горящие красные глаза и мундир.',
+    wiki: 'Гениальный стратег расы чиссов в чисто-белом парадном кителе Империи с эполетами.',
+    traits: { mainColors: ['белый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Синее лицо, горящие красные зрачки, белый китель.' }
   }
 ];
 
