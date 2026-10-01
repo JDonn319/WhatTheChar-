@@ -11,7 +11,12 @@ export const App: React.FC = () => {
   const [gameState, setGameState] = useState<'menu' | 'playing'>('menu');
   const [activeCharacters, setActiveCharacters] = useState<Character[]>([]);
   const [isAiMode, setIsAiMode] = useState(false);
-  const [backgroundUrl, setBackgroundUrl] = useState(
+  
+  // Текущая выбранная модель ИИ (по умолчанию ультра-быстрая gemini-3.1-flash-lite)
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
+
+  // Фоновое изображение
+  const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
 
@@ -61,6 +66,8 @@ export const App: React.FC = () => {
           onStartMulti={startMultiplayer}
           currentBg={backgroundUrl}
           onChangeBg={setBackgroundUrl}
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
         />
       )}
 
@@ -70,6 +77,10 @@ export const App: React.FC = () => {
           characters={activeCharacters}
           isAiMode={isAiMode}
           onBackToMenu={() => setGameState('menu')}
+          selectedModel={selectedModel}
+          onSelectModel={setSelectedModel}
+          currentBg={backgroundUrl}
+          onChangeBg={setBackgroundUrl}
         />
       )}
     </main>
