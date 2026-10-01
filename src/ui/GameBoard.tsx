@@ -46,10 +46,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Жизни
+  // Жизни игрока (3 сердечка)
   const [playerLives, setPlayerLives] = useState<number>(3);
 
-  // Результат
+  // Окно победы/поражения
   const [gameResult, setGameResult] = useState<{
     show: boolean;
     isVictory: boolean;
@@ -65,7 +65,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [serverBusyError, setServerBusyError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Режим разработчика (ucansay toggle)
+  // Режим разработчика (ucansay)
   const [isDevMode, setIsDevMode] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -132,7 +132,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
-  // Отправка сообщения
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = (textOverride !== undefined ? textOverride : inputText).trim();
     if (!textToSend || !isMyTurn || isAiThinking) return;
@@ -163,7 +162,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         const data = await response.json();
 
-        // Если сервера заняты (код 503) — НЕ задаем вопрос ИИ, а выводим плашку с перезапуском
         if (response.status === 503 || data.isBusy) {
           setServerBusyError(data.error || 'Серверы перегружены.');
           setIsAiThinking(false);
@@ -171,7 +169,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           return;
         }
 
-        // Переключение dev mode
         if (data.toggledDevMode !== undefined) {
           setIsDevMode(data.toggledDevMode);
         }
@@ -214,7 +211,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   };
 
-  // Мгновенная отправка кнопок «Да / Нет / Частично»
   const handleQuickAnswerInstant = (val: string) => {
     if (!isMyTurn || isAiThinking) return;
     handleSendMessage(val);
@@ -570,7 +566,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ЧАТ (КОПИРОВАНИЕ, МГНОВЕННЫЕ ОТВЕТЫ, ПЕРЕЗАГРУЗКА ПРИ ЗАНЯТОСТИ) */}
+      {/* 8. ЧАТ РАУНДА */}
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
@@ -615,7 +611,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               >
                 {m.text}
 
-                {/* Кнопка копирования под сообщением */}
                 <button
                   onClick={() => handleCopyMessage(m.text, idx)}
                   className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
@@ -635,7 +630,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               </div>
             )}
 
-            {/* Блок перегрузки серверов с кнопкой повтора */}
             {serverBusyError && (
               <div className="p-3 bg-red-950/40 border border-red-500/40 flex flex-col gap-2 text-xs text-red-300">
                 <div className="flex items-center gap-2">
@@ -718,7 +712,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         onSelectAiTone={onSelectAiTone}
       />
 
-      {/* 10. МОДАЛКА РЕЗУЛЬТАТА С ЧИСТЫМ РЕВАНШЕМ */}
+      {/* 10. МОДАЛКА РЕЗУЛЬТАТА */}
       {gameResult.show && (
         <GameResultModal 
           isVictory={gameResult.isVictory}
@@ -732,3 +726,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     </div>
   );
+};
+
+export default GameBoard;
