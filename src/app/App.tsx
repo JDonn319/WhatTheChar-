@@ -10,12 +10,13 @@ export const App: React.FC = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [gameState, setGameState] = useState<'menu' | 'playing'>('menu');
   const [activeCharacters, setActiveCharacters] = useState<Character[]>([]);
+  const [activeUniverse, setActiveUniverse] = useState<UniverseType>('all');
   const [isAiMode, setIsAiMode] = useState(false);
   
-  // Текущая выбранная модель ИИ (по умолчанию ультра-быстрая gemini-3.1-flash-lite)
+  // Модель по умолчанию
   const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
 
-  // Фоновое изображение
+  // Фоновое изображение (дефолтное)
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
@@ -23,6 +24,7 @@ export const App: React.FC = () => {
   const startSinglePlayer = (universe: UniverseType) => {
     const chars = getRandom36(universe);
     setActiveCharacters(chars);
+    setActiveUniverse(universe);
     setIsAiMode(true);
     setIsTransitioning(true);
   };
@@ -30,25 +32,31 @@ export const App: React.FC = () => {
   const startMultiplayer = (universe: UniverseType) => {
     const chars = getRandom36(universe);
     setActiveCharacters(chars);
+    setActiveUniverse(universe);
     setIsAiMode(false);
     setIsTransitioning(true);
   };
 
   return (
     <main className="fixed inset-0 w-full h-full bg-black text-white overflow-hidden font-sans">
+      {/* 
+        Исправленный контейнер фонового изображения:
+        - Увеличена яркость до opacity-50 (картинка больше не уходит в глухой черный цвет)
+        - Корректная подгрузка картинок из /public/background2.jpg и /public/background3.jpg
+      */}
       {backgroundUrl && (
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-25 blur-sm scale-105 pointer-events-none transition-all duration-700"
-          style={{ backgroundImage: `url(${backgroundUrl})` }}
+          className="absolute inset-0 bg-cover bg-center opacity-50 blur-[2px] scale-105 pointer-events-none transition-all duration-700"
+          style={{ backgroundImage: `url("${backgroundUrl}")` }}
         />
       )}
 
-      {/* Первичная загрузка приложения */}
+      {/* Первичная загрузка игры */}
       {isAppLoading && (
         <SplashScreen onLoaded={() => setIsAppLoading(false)} />
       )}
 
-      {/* Предзагрузка 36 карточек при переходе в матч */}
+      {/* Кэширование 36 карточек при переходе в матч */}
       {isTransitioning && (
         <TransitionLoader 
           characters={activeCharacters}
@@ -81,6 +89,7 @@ export const App: React.FC = () => {
           onSelectModel={setSelectedModel}
           currentBg={backgroundUrl}
           onChangeBg={setBackgroundUrl}
+          currentUniverse={activeUniverse}
         />
       )}
     </main>
