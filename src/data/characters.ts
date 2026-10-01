@@ -21,7 +21,7 @@ export interface Character {
 
 export const CHARACTERS_DB: Character[] = [
   // ==========================================
-  // 1. MARVEL (48 персонажей)
+  // 1. MARVEL (48 персонажей — Фильмы MCU)
   // ==========================================
   {
     id: 'iron_man',
@@ -57,7 +57,7 @@ export const CHARACTERS_DB: Character[] = [
     avatar: '/characters/thor.png',
     shortDesc: 'Первые Мстители: длинные волосы и молот Мьёльнир.',
     wiki: 'Тор образца «Мстители 1»: длинные светлые волосы, красный плащ за спиной, серебряные латы и молот Мьёльнир.',
-    traits: { mainColors: ['серебряный', 'красный'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Длинные золотистые волосы, молот Мьёльнир в руке, красный плащ.' }
+    traits: { mainColors: ['серебряный', 'красный'], hasHelmetOrMask: false, hasCape: true, hasBeard: true, hasWeapon: true, isHuman: false, isVillain: false, notes: 'Длинные золотистые волосы, молот Мьёльнир в руке (не секира!), красный плащ.' }
   },
   {
     id: 'hulk',
@@ -65,8 +65,8 @@ export const CHARACTERS_DB: Character[] = [
     universe: 'marvel',
     avatar: '/characters/hulk.png',
     shortDesc: 'Зеленый мускулистый гигант.',
-    wiki: 'Халк с обнаженным торсом в порванных темных штанах. Зеленая кожа и черные волосы.',
-    traits: { mainColors: ['зеленый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Голый торс, без шлема и оружия.' }
+    wiki: 'Халк с обнаженным торсом в порванных темных штанах. Зеленая кожа и черные волосы. Не летает, а прыгает.',
+    traits: { mainColors: ['зеленый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Голый торс, без шлема и оружия. Сверхсильные прыжки.' }
   },
   {
     id: 'thanos',
@@ -457,7 +457,7 @@ export const CHARACTERS_DB: Character[] = [
   },
 
   // ==========================================
-  // 2. THE BOYS (48 персонажей — Накиб включен)
+  // 2. THE BOYS (48 персонажей — Сериал Amazon)
   // ==========================================
   {
     id: 'homelander',
@@ -893,7 +893,7 @@ export const CHARACTERS_DB: Character[] = [
   },
 
   // ==========================================
-  // 3. INVINCIBLE (48 персонажей)
+  // 3. INVINCIBLE (48 персонажей — Мультсериал Amazon, проверено по кадрам)
   // ==========================================
   {
     id: 'omni_man',
@@ -927,9 +927,9 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Аллен Пришелец',
     universe: 'invincible',
     avatar: '/characters/allen_alien.png',
-    shortDesc: 'Оранжевая кожа и один огромный глаз.',
-    wiki: 'Могучий унопианец с одним глазом на лбу, без носа, в космической форме федерации.',
-    traits: { mainColors: ['оранжевый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Один большой глаз, оранжевая кожа, без носа.' }
+    shortDesc: 'Оранжевый циклоп в белой майке.',
+    wiki: 'Могучий чемпион Коалиции Планет расы унопианцев с одним глазом и белой футболкой.',
+    traits: { mainColors: ['оранжевый', 'белый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Один большой глаз, оранжевая кожа, без носа, белая майка.' }
   },
   {
     id: 'robot',
@@ -990,9 +990,9 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Ангстром Леви',
     universe: 'invincible',
     avatar: '/characters/angstrom_levy.png',
-    shortDesc: 'Гигантский изуродованный мозг сзади.',
-    wiki: 'Путешественник по Мультивселенной с колоссально раздутым назад бугристым мозгом.',
-    traits: { mainColors: ['зеленый'], hasHelmetOrMask: false, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Огромная пульсирующая голова, визор на одном глазу.' }
+    shortDesc: 'Гигантский мозг, синий пиджак и бородка.',
+    wiki: 'Путешественник по измерениям в синем блейзере и бордовом свитере, с огромным мозгом со шрамом и эспаньолкой.',
+    traits: { mainColors: ['синий', 'бордовый'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Огромный мозг со шрамом, синий пиджак, рубашка с галстуком, бородка.' }
   },
   {
     id: 'conquest',
@@ -1053,9 +1053,9 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Док Сейсмик',
     universe: 'invincible',
     avatar: '/characters/doc_seismic.png',
-    shortDesc: 'Зеленые очки и сейсмические рукавицы.',
-    wiki: 'Безумный геолог с горбом, управляющий землетрясениями и лавой из перчаток.',
-    traits: { mainColors: ['серый', 'зеленый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Зеленые круглые очки, массивные наручи-пушки.' }
+    shortDesc: 'Лысый старик в белом халате и красной кофте.',
+    wiki: 'Безумный геолог в белом лабораторном халате и красной рубашке с белой линией сейсмографа.',
+    traits: { mainColors: ['белый', 'красный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: true, isVillain: true, notes: 'Лысая голова, открытое морщинистое лицо БЕЗ очков, белый халат, красный свитер с молнией-зигзагом.' }
   },
   {
     id: 'red_rush',
@@ -1080,9 +1080,9 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Темнокрыл',
     universe: 'invincible',
     avatar: '/characters/darkwing.png',
-    shortDesc: 'Сине-черный костюм с крыльями-перепонками.',
-    wiki: 'Ночной детектив в маске летучей мыши с плащом-крыльями под мышками.',
-    traits: { mainColors: ['синий', 'черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Маска летучей мыши с ушками, крылья под руками.' }
+    shortDesc: 'Темно-серый шлем с белыми светящимися глазами.',
+    wiki: 'Оригинальный защитник Полуночного города в шлеме с ушками и светящимися белыми щелками глаз.',
+    traits: { mainColors: ['серый', 'черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Светящиеся белые глаза без зрачков, темно-серая маска с ушками.' }
   },
   {
     id: 'aquarus',
@@ -1170,18 +1170,18 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Черный Самсон',
     universe: 'invincible',
     avatar: '/characters/black_samson.png',
-    shortDesc: 'Серый силовой бронекостюм Стражей.',
-    wiki: 'Ветеран команды, сражавшийся в специальном экзоскелете до возвращения своих сил.',
-    traits: { mainColors: ['серый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: true, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Седеющая бородка, высокотехнологичный экзоскелет.' }
+    shortDesc: 'Лысый в желто-золотой силовой броне.',
+    wiki: 'Ветеран Стражей Земли в массивном желто-золотом экзоскелете с высоким воротником.',
+    traits: { mainColors: ['золотой', 'черный'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: true, isVillain: false, notes: 'Лысая голова, желто-золотая броня с черными плечами и высоким воротником.' }
   },
   {
     id: 'killcannon',
     name: 'Киллкэннон',
     universe: 'invincible',
     avatar: '/characters/killcannon.png',
-    shortDesc: 'Лазерная пушка вместо правой руки.',
-    wiki: 'Киборг-рецидивист в синих латах с колоссальным энергетическим орудием на предплечье.',
-    traits: { mainColors: ['синий', 'серый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Огромная лазерная пушка вместо правой руки.' }
+    shortDesc: 'Красный визор и пушка на левой руке.',
+    wiki: 'Киборг-рецидивист в серой кирасе с красными ремнями и огромной белой пушкой на левой руке.',
+    traits: { mainColors: ['серый', 'красный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Сплошной красный визор на глазах, пушка на ЛЕВОЙ руке, серая кираса.' }
   },
   {
     id: 'machine_head',
@@ -1278,9 +1278,9 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Лидер Флаксанцев',
     universe: 'invincible',
     avatar: '/characters/flaxan_leader.png',
-    shortDesc: 'Военачальник пришельцев в золотых доспехах.',
-    wiki: 'Командующий вторжением из измерения Флакса, где время течет в тысячи раз быстрее.',
-    traits: { mainColors: ['золотой', 'красный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Золотые тяжелые латы, шлем с забралом, инопланетянин.' }
+    shortDesc: 'Зеленый пришелец с усиками в бело-синей броне.',
+    wiki: 'Командующий вторжением из Флаксы с открытым зеленым лицом с усиками и бело-синим панцирем.',
+    traits: { mainColors: ['зеленый', 'белый', 'синий'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Зеленая голова с антеннами БЕЗ шлема, белый нагрудник с синей туникой.' }
   },
   {
     id: 'rus_livingston',
@@ -1296,40 +1296,40 @@ export const CHARACTERS_DB: Character[] = [
     name: 'Пауэрплекс (Скотт Дюваль)',
     universe: 'invincible',
     avatar: '/characters/powerplex.png',
-    shortDesc: 'Электрический суперзлодей в желтом костюме.',
-    wiki: 'Супер, поглощающий кинетическую энергию ударов и возвращающий ее в виде мощных молний.',
-    traits: { mainColors: ['желтый', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Желто-черный костюм, ветвящиеся синие молнии вокруг рук.' }
+    shortDesc: 'Белые светящиеся глаза и желтые молнии.',
+    wiki: 'Суперзлодей со светлыми волосами, горящими белыми глазами и костюмом, излучающим электричество.',
+    traits: { mainColors: ['коричневый', 'желтый'], hasHelmetOrMask: false, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Светлые волосы, сплошные белые светящиеся глаза, желтые молнии вокруг тела.' }
   },
   {
     id: 'darkwing_ii',
-    name: 'Темнокрыл II (Ночной Боец)',
+    name: 'Темнокрыл II',
     universe: 'invincible',
     avatar: '/characters/darkwing_ii.png',
-    shortDesc: 'Преемник Темнокрыла, управляющий тенями.',
-    wiki: 'Протеже оригинального Темнокрыла, погружающий врагов в вечную тьму Теневой Вселенной.',
-    traits: { mainColors: ['черный'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Черный рваный плащ, светящиеся красные линзы на маске.' }
+    shortDesc: 'Темная маска с вырезом под глаза и подбородок.',
+    wiki: 'Преемник Темнокрыла, погружающий врагов в Теневое измерение. Обычные карие глаза со зрачками.',
+    traits: { mainColors: ['черный', 'фиолетовый'], hasHelmetOrMask: true, hasCape: true, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Темно-фиолетовая маска, открытые карие глаза с видимыми зрачками (не белые линзы!).' }
   },
   {
-    id: 'kursk',
-    name: 'Курск',
+    id: 'bolt',
+    name: 'Болт (Брюс)',
     universe: 'invincible',
-    avatar: '/characters/kursk.png',
-    shortDesc: 'Русский электро-злодей в синем костюме.',
-    wiki: 'Наемник на службе преступных синдикатов, мечущий смертоносные электрические дуги.',
-    traits: { mainColors: ['синий', 'черный'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Синий костюм с черной полумаской, электричество на пальцах.' }
+    avatar: '/characters/bolt.png',
+    shortDesc: 'Желтый костюм, глаза-молнии и ирокез.',
+    wiki: 'Герой из Capes Inc., управляющий электричеством, в желтом комбинезоне с гребнем-молнией на голове.',
+    traits: { mainColors: ['желтый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: false, notes: 'Ярко-желтый костюм, плавник-молния на маске, глаза в виде молний, голубые разряды за плечами.' }
   },
   {
     id: 'furnace',
     name: 'Печь (Фёрнес)',
     universe: 'invincible',
     avatar: '/characters/furnace.png',
-    shortDesc: 'Киборг-печь с раскаленным пламенем внутри.',
-    wiki: 'Преступник в массивном чугунном экзоскелете, выпускающий раскаленный пар и жидкий огонь.',
-    traits: { mainColors: ['серый', 'оранжевый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: false, isHuman: false, isVillain: true, notes: 'Чугунная броня с решеткой на груди, сквозь которую пылает огонь.' }
+    shortDesc: 'Черный робот с решеткой и вытекающей лавой.',
+    wiki: 'Тяжелый киборг с желтыми полосами на броне, из переднего дула которого струится раскаленная лава.',
+    traits: { mainColors: ['черный', 'желтый', 'оранжевый'], hasHelmetOrMask: true, hasCape: false, hasBeard: false, hasWeapon: true, isHuman: false, isVillain: true, notes: 'Черный корпус с желтыми полосами и решеткой на голове, струящаяся желто-оранжевая лава.' }
   },
 
   // ==========================================
-  // 4. STAR WARS (36 персонажей)
+  // 4. STAR WARS (36 персонажей — Фильмы и сериалы)
   // ==========================================
   {
     id: 'darth_vader',
