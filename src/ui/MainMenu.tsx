@@ -52,7 +52,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   ];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] z-10 box-border transition-all">
+    <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-3 z-10 box-border transition-all">
       
       {/* Шапка */}
       <header className="flex justify-between items-center w-full max-w-sm mx-auto">
