@@ -21,6 +21,8 @@ interface MainMenuProps {
   onSaveNickname: (name: string) => void;
   aiTone: AiToneType;
   onSelectAiTone: (tone: AiToneType) => void;
+  autoFilterEnabled: boolean;
+  onToggleAutoFilter: (val: boolean) => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({ 
@@ -33,7 +35,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   nickname,
   onSaveNickname,
   aiTone,
-  onSelectAiTone
+  onSelectAiTone,
+  autoFilterEnabled,
+  onToggleAutoFilter
 }) => {
   const [selectedUniverse, setSelectedUniverse] = useState<UniverseType>('all');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -48,7 +52,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   ];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] z-10 box-border">
+    <div className="relative w-full h-full flex flex-col justify-between px-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] z-10 box-border transition-all">
       
       {/* Шапка */}
       <header className="flex justify-between items-center w-full max-w-sm mx-auto">
@@ -77,7 +81,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             onClick={() => setSelectedUniverse(u.id)}
             className={`w-full py-3.5 px-4 text-xs font-bold tracking-wider transition-all backdrop-blur-md border flex items-center justify-between ${
               selectedUniverse === u.id
-                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.01]'
                 : 'bg-white/10 text-white/80 border-white/10 active:bg-white/20'
             }`}
           >
@@ -91,7 +95,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       <div className="flex flex-col gap-2 max-w-sm w-full mx-auto">
         <button
           onClick={() => setIsRoomModalOpen(true)}
-          className="w-full py-4 bg-white/10 backdrop-blur-lg border border-white/30 text-white font-black tracking-wider active:bg-white active:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase"
+          className="w-full py-4 bg-white/10 backdrop-blur-lg border border-white/30 text-white font-black tracking-wider active:bg-white active:text-black transition-all flex items-center justify-center gap-2 text-xs uppercase shadow-lg"
         >
           <Users size={16} />
           Создать комнату (PvP)
@@ -99,7 +103,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
         <button
           onClick={() => onStartSingle(selectedUniverse)}
-          className="w-full py-4 bg-white text-black font-black tracking-wider active:bg-neutral-300 transition-all flex items-center justify-center gap-2 text-xs uppercase"
+          className="w-full py-4 bg-white text-black font-black tracking-wider active:bg-neutral-300 transition-all flex items-center justify-center gap-2 text-xs uppercase shadow-xl"
         >
           <Play size={16} />
           Одиночная игра (ИИ)
@@ -118,9 +122,11 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         onSaveNickname={onSaveNickname}
         aiTone={aiTone}
         onSelectAiTone={onSelectAiTone}
+        autoFilterEnabled={autoFilterEnabled}
+        onToggleAutoFilter={onToggleAutoFilter}
       />
 
-      {/* Модалка создания/входа в комнату */}
+      {/* Модалка комнаты */}
       <RoomCreateModal
         isOpen={isRoomModalOpen}
         onClose={() => setIsRoomModalOpen(false)}
