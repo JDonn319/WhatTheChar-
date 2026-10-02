@@ -4,6 +4,7 @@ import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
 import { TransitionLoader } from '../ui/TransitionLoader';
 import { LobbyRoomModal } from '../ui/LobbyRoomModal';
+import { DiceRollOverlay } from '../ui/DiceRollOverlay';
 import { Character, CHARACTERS_DB, getRandom36, UniverseType } from '../data/characters';
 import { AiToneType } from '../ui/SettingsModal';
 import { supabase } from '../lib/supabase';
@@ -23,7 +24,11 @@ export const App: React.FC = () => {
   const [activeUniverse, setActiveUniverse] = useState<string>('all');
   const [isAiMode, setIsAiMode] = useState(false);
 
-  // Мультиплеерные данные
+  // Жеребьевка 3D-кубом
+  const [showDiceRoll, setShowDiceRoll] = useState(false);
+  const [diceWinner, setDiceWinner] = useState<string>('');
+
+  // Мультиплеер
   const [multiConfig, setMultiConfig] = useState<{
     roomId: string;
     isHost: boolean;
@@ -31,9 +36,9 @@ export const App: React.FC = () => {
     guestNickname: string | null;
     themes: string[];
     timerSeconds: number;
+    isReady: boolean;
   } | null>(null);
 
-  // Никнейм
   const [nickname, setNickname] = useState<string>(() => {
     return localStorage.getItem('wtc_nickname') || generateRandomNick();
   });
@@ -43,7 +48,6 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_nickname', name);
   };
 
-  // Тон ИИ
   const [aiTone, setAiTone] = useState<AiToneType>(() => {
     return (localStorage.getItem('wtc_ai_tone') as AiToneType) || 'standard';
   });
@@ -53,7 +57,6 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_ai_tone', tone);
   };
 
-  // Автофильтрация
   const [autoFilterEnabled, setAutoFilterEnabled] = useState<boolean>(() => {
     return localStorage.getItem('wtc_autofilter') === 'true';
   });
@@ -63,10 +66,9 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_autofilter', String(val));
   };
 
-  // Модель ИИ
   const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash-8b');
 
-  // Фон
+  // Фоны (по умолчанию — Замок)
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
@@ -88,7 +90,7 @@ export const App: React.FC = () => {
     isHost: boolean;
   }) => {
     if (!supabase) {
-      alert('Ошибка: Supabase не подключен. Проверьте переменные окружения.');
+      alert('Ошибка: Supabase не подключен.');
       return;
     }
 
@@ -128,11 +130,11 @@ export const App: React.FC = () => {
         hostNickname: nickname,
         guestNickname: null,
         themes: config.themes,
-        timerSeconds: config.timerSeconds
+        timerSeconds: config.timerSeconds,
+        isReady: false
       });
 
       setGameState('lobby');
-
     } else {
       const { data: room, error } = await supabase
         .from('rooms')
@@ -150,17 +152,9 @@ export const App: React.FC = () => {
         return;
       }
 
-      if (room.guest_nickname && room.guest_nickname !== nickname) {
-        alert('В этой комнате уже играют двое!');
-        return;
-      }
-
       await supabase
         .from('rooms')
-        .update({
-          guest_nickname: nickname,
-          status: 'picking'
-        })
+        .update({ guest_nickname: nickname, status: 'waiting' })
         .eq('id', config.roomId);
 
       setActiveCharacters(room.characters);
@@ -173,18 +167,30 @@ export const App: React.FC = () => {
         hostNickname: room.host_nickname,
         guestNickname: nickname,
         themes: room.themes || ['all'],
-        timerSeconds: room.timer_seconds || 0
+        timerSeconds: room.timer_seconds || 0,
+        isReady: false
       });
 
       setGameState('lobby');
     }
   };
 
+  // Переключение готовности
+  const handleToggleReady = async () => {
+    if (!multiConfig || !supabase) return;
+    const nextReady = !multiConfig.isReady;
+    setMultiConfig(prev => prev ? { ...prev, isReady: nextReady } : null);
+
+    const readyField = multiConfig.isHost ? 'host_char_id' : 'guest_char_id';
+    await supabase.from('rooms').update({ [readyField]: nextReady ? 'READY' : null }).eq('id', multiConfig.roomId);
+  };
+
+  // Прослушка готовности обоих игроков в лобби
   useEffect(() => {
     if (gameState !== 'lobby' || !multiConfig || !supabase) return;
 
     const channel = supabase
-      .channel(`lobby_${multiConfig.roomId}`)
+      .channel(`lobby_events_${multiConfig.roomId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${multiConfig.roomId}` },
@@ -193,8 +199,23 @@ export const App: React.FC = () => {
           if (r.guest_nickname) {
             setMultiConfig(prev => prev ? { ...prev, guestNickname: r.guest_nickname } : null);
           }
-          if (r.status === 'playing' || r.status === 'picking') {
-            setIsTransitioning(true);
+
+          // Оба нажали «ГОТОВ» -> запускаем 3D куб
+          if (r.host_char_id === 'READY' && r.guest_char_id === 'READY') {
+            const firstMover = Math.random() < 0.5 ? r.host_nickname : r.guest_nickname;
+            setDiceWinner(firstMover);
+            setShowDiceRoll(true);
+
+            // Фиксируем первого в базе
+            if (multiConfig.isHost) {
+              const startRole = firstMover === r.host_nickname ? 'host' : 'guest';
+              supabase.from('rooms').update({
+                current_turn: startRole,
+                host_char_id: null,
+                guest_char_id: null,
+                status: 'picking'
+              }).eq('id', multiConfig.roomId);
+            }
           }
         }
       )
@@ -210,7 +231,7 @@ export const App: React.FC = () => {
       if (multiConfig.isHost) {
         await supabase.from('rooms').delete().eq('id', multiConfig.roomId);
       } else {
-        await supabase.from('rooms').update({ guest_nickname: null, status: 'waiting' }).eq('id', multiConfig.roomId);
+        await supabase.from('rooms').update({ guest_nickname: null, guest_char_id: null }).eq('id', multiConfig.roomId);
       }
     }
     setMultiConfig(null);
@@ -226,9 +247,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {isAppLoading && (
-        <SplashScreen onLoaded={() => setIsAppLoading(false)} />
-      )}
+      {isAppLoading && <SplashScreen onLoaded={() => setIsAppLoading(false)} />}
 
       {isTransitioning && (
         <TransitionLoader 
@@ -240,7 +259,20 @@ export const App: React.FC = () => {
         />
       )}
 
-      {!isAppLoading && !isTransitioning && gameState === 'menu' && (
+      {/* 3D-Куб жеребьевки */}
+      {showDiceRoll && multiConfig && (
+        <DiceRollOverlay
+          player1Name={multiConfig.hostNickname}
+          player2Name={multiConfig.guestNickname || 'Гость'}
+          starterName={diceWinner}
+          onFinish={() => {
+            setShowDiceRoll(false);
+            setIsTransitioning(true);
+          }}
+        />
+      )}
+
+      {!isAppLoading && !isTransitioning && !showDiceRoll && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
           onStartMulti={startMultiplayer}
@@ -257,7 +289,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {!isAppLoading && gameState === 'lobby' && multiConfig && (
+      {!isAppLoading && !showDiceRoll && gameState === 'lobby' && multiConfig && (
         <LobbyRoomModal
           roomId={multiConfig.roomId}
           isHost={multiConfig.isHost}
@@ -265,12 +297,13 @@ export const App: React.FC = () => {
           guestNickname={multiConfig.guestNickname}
           themes={multiConfig.themes}
           timerSeconds={multiConfig.timerSeconds}
+          isReady={multiConfig.isReady}
+          onToggleReady={handleToggleReady}
           onLeaveRoom={handleLeaveLobby}
-          onStartMatch={() => setIsTransitioning(true)}
         />
       )}
 
-      {!isAppLoading && !isTransitioning && gameState === 'playing' && (
+      {!isAppLoading && !isTransitioning && !showDiceRoll && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
           isAiMode={isAiMode}
