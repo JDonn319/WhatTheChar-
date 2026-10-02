@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Cpu, Image as ImageIcon, Activity, Check, User, Smile, Zap, Flame, ShieldAlert } from 'lucide-react';
+import { X, Cpu, Image as ImageIcon, Activity, Check, User, Smile, Zap, Flame, ShieldAlert, Sparkles, AlertTriangle } from 'lucide-react';
 
 export type AiToneType = 'standard' | 'sarcastic' | 'unhinged';
 
@@ -11,36 +11,11 @@ export interface AiModelOption {
 }
 
 export const AI_MODELS: AiModelOption[] = [
-  {
-    id: 'gemini-1.5-flash-8b',
-    name: 'Gemini 1.5 Flash-8B',
-    badge: 'Ультра-легкая',
-    desc: 'Компактная скоростная модель с минимальной задержкой.'
-  },
-  {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    badge: 'Классическая Flash',
-    desc: 'Проверенная рабочая модель со стабильной скоростью.'
-  },
-  {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    badge: 'Поколение 2.0',
-    desc: 'Быстрый отклик и точное логическое мышление.'
-  },
-  {
-    id: 'gemini-3.1-flash-lite',
-    name: 'Gemini 3.1 Flash-Lite',
-    badge: 'Свежая Lite',
-    desc: 'Высокая пропускная способность, спасает в часы пик.'
-  },
-  {
-    id: 'gemini-3.8-flash',
-    name: 'Gemini 3.8 Flash',
-    badge: 'Флагман 3.8',
-    desc: 'Глубокая дедукция с каскадным резервированием.'
-  }
+  { id: 'gemini-1.5-flash-8b', name: 'Gemini 1.5 Flash-8B', badge: 'Ультра-легкая', desc: 'Минимальная задержка отклика.' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', badge: 'Классическая Flash', desc: 'Стабильная проверенная модель.' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', badge: 'Поколение 2.0', desc: 'Быстрый отклик и хорошее мышление.' },
+  { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', badge: 'Свежая Lite', desc: 'Высокая пропускная способность.' },
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', badge: 'Флагман 3.8', desc: 'Глубокая дедукция и логика.' }
 ];
 
 interface SettingsModalProps {
@@ -54,6 +29,8 @@ interface SettingsModalProps {
   onSaveNickname: (name: string) => void;
   aiTone: AiToneType;
   onSelectAiTone: (tone: AiToneType) => void;
+  autoFilterEnabled: boolean;
+  onToggleAutoFilter: (val: boolean) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -66,12 +43,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   nickname,
   onSaveNickname,
   aiTone,
-  onSelectAiTone
+  onSelectAiTone,
+  autoFilterEnabled,
+  onToggleAutoFilter
 }) => {
   if (!isOpen) return null;
 
   const [nickInput, setNickInput] = useState(nickname);
   const [nickError, setNickError] = useState('');
+  const [showAutoFilterAlert, setShowAutoFilterAlert] = useState(false);
 
   const bgOptions = [
     { id: 'default', label: 'Неон (По умолчанию)', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000' },
@@ -82,7 +62,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleNickChange = (val: string) => {
     setNickInput(val);
-    // До 8 латинских букв и максимум 2 цифры
     const lettersCount = (val.match(/[a-zA-Z]/g) || []).length;
     const digitsCount = (val.match(/[0-9]/g) || []).length;
     const invalidChars = /[^a-zA-Z0-9]/.test(val);
@@ -102,7 +81,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] select-none animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] select-none animate-in fade-in duration-300">
       
       <header className="flex justify-between items-center pb-4 border-b border-white/20">
         <span className="text-sm font-black uppercase tracking-wider text-white">Параметры игры</span>
@@ -116,11 +95,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
       <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-6 max-w-sm w-full mx-auto">
         
-        {/* 1. Никнейм */}
+        {/* Никнейм */}
         <section className="flex flex-col gap-1.5">
           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
             <User size={13} />
-            Ваш игровой позывной
+            Ваш позывной
           </span>
           <div className="flex flex-col gap-1">
             <input
@@ -128,28 +107,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={nickInput}
               onChange={e => handleNickChange(e.target.value)}
               maxLength={10}
-              placeholder="До 8 букв и 2 цифр (напр. Ghost7)"
-              className="w-full bg-white/5 border border-white/25 px-3 py-2.5 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-white"
+              placeholder="До 8 букв и 2 цифр"
+              className="w-full bg-white/5 border border-white/25 px-3 py-2.5 text-xs text-white font-mono placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
             />
-            {nickError ? (
-              <span className="text-[10px] text-red-400 font-mono">{nickError}</span>
-            ) : (
-              <span className="text-[9px] text-neutral-500 font-mono">Формат: латиница до 8 букв + не более 2 цифр</span>
-            )}
+            {nickError && <span className="text-[10px] text-red-400 font-mono">{nickError}</span>}
           </div>
         </section>
 
-        {/* 2. Тон и характер ИИ */}
+        {/* Автофильтрация со знаком предупреждения */}
+        <section className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={13} className="text-emerald-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-neutral-300">
+                Автофильтрация карточек
+              </span>
+              <button
+                onClick={() => setShowAutoFilterAlert(true)}
+                className="text-amber-400 p-0.5 hover:scale-110 active:scale-95 transition-transform"
+              >
+                <AlertTriangle size={13} />
+              </button>
+            </div>
+            
+            {/* Тумблер */}
+            <button
+              onClick={() => onToggleAutoFilter(!autoFilterEnabled)}
+              className={`w-11 h-6 p-0.5 border transition-colors flex items-center ${
+                autoFilterEnabled ? 'bg-white border-white justify-end' : 'bg-white/10 border-white/20 justify-start'
+              }`}
+            >
+              <div className={`w-4 h-4 transition-colors ${autoFilterEnabled ? 'bg-black' : 'bg-neutral-400'}`} />
+            </button>
+          </div>
+          <p className="text-[9px] text-neutral-500 leading-tight">
+            Автоматически гасит неподходящих персонажей на основе ответов «Да» и «Нет» в чате.
+          </p>
+        </section>
+
+        {/* Тон и поведение ИИ */}
         <section className="flex flex-col gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
             <Smile size={13} />
-            Тон и поведение ИИ
+            Характер ИИ
           </span>
 
           <div className="grid grid-cols-3 gap-1.5">
             {[
               { id: 'standard', label: 'Спокойный', icon: <Zap size={12} />, desc: 'Строгий и вежливый' },
-              { id: 'sarcastic', label: 'Саркастичный', icon: <Flame size={12} />, desc: 'Подкалывает и язвит' },
+              { id: 'sarcastic', label: 'Сарказм', icon: <Flame size={12} />, desc: 'Подкалывает и язвит' },
               { id: 'unhinged', label: 'Расшатанный', icon: <ShieldAlert size={12} />, desc: 'Зеркалит тон, ругается' }
             ].map(t => {
               const isSelected = aiTone === t.id;
@@ -174,28 +180,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </section>
 
-        {/* 3. Монитор квоты */}
-        <section className="flex flex-col gap-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
-            <Activity size={13} className="text-emerald-400" />
-            Квота серверов
-          </span>
-          <div className="p-3 bg-white/5 border border-white/15 flex flex-col gap-2">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-white">Google AI Studio</span>
-              <span className="text-[9px] font-mono px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-emerald-400 animate-pulse" />
-                АКТИВЕН
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-1 text-[10px] font-mono text-neutral-300 border-t border-white/10 pt-1.5">
-              <span>Лимит: 15 RPM</span>
-              <span>Сутки: 1,500 RPD</span>
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Выбор модели */}
+        {/* Модели */}
         <section className="flex flex-col gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
             <Cpu size={13} />
@@ -229,7 +214,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </section>
 
-        {/* 5. Фон */}
+        {/* Фон */}
         <section className="flex flex-col gap-2 pb-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
             <ImageIcon size={13} />
@@ -259,11 +244,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <footer className="pt-3 border-t border-white/20 max-w-sm w-full mx-auto">
         <button
           onClick={onClose}
-          className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300"
+          className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300 transition-colors"
         >
           Применить и закрыть
         </button>
       </footer>
+
+      {/* Предупреждение об автофильтрации */}
+      {showAutoFilterAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-5 animate-in fade-in duration-200">
+          <div className="w-full max-w-xs bg-neutral-950 border border-amber-500/50 p-5 flex flex-col items-center text-center gap-3 shadow-2xl">
+            <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase text-white">Внимание: Автофильтр</h4>
+              <p className="text-[11px] text-neutral-300 mt-1 leading-relaxed">
+                Система анализирует чат по ключевым словам («плащ», «маска», «человек», «борода» и др.). При сложных или нестандартных ответах соперника система может ошибиться. Рекомендуется перепроверять доску самостоятельно!
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAutoFilterAlert(false)}
+              className="w-full py-2.5 bg-white text-black font-black text-xs uppercase active:bg-neutral-300 transition-colors"
+            >
+              Понятно
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
