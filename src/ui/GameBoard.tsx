@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, 
   Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck, 
-  Users, Clock, Share2 
+  Clock, Sparkles 
 } from 'lucide-react';
 import { Character } from '../data/characters';
 import { GameResultModal } from './GameResultModal';
@@ -22,6 +22,8 @@ interface GameBoardProps {
   onSaveNickname: (name: string) => void;
   aiTone: AiToneType;
   onSelectAiTone: (tone: AiToneType) => void;
+  autoFilterEnabled: boolean;
+  onToggleAutoFilter: (val: boolean) => void;
   multiplayerConfig?: {
     roomId: string;
     isHost: boolean;
@@ -42,6 +44,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onSaveNickname,
   aiTone,
   onSelectAiTone,
+  autoFilterEnabled,
+  onToggleAutoFilter,
   multiplayerConfig
 }) => {
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
@@ -57,84 +61,120 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Жизни игрока (3 сердечка)
+  // 3 Сердечка
   const [playerLives, setPlayerLives] = useState<number>(3);
 
-  // Окно результата раунда
+  // Окно результата
   const [gameResult, setGameResult] = useState<{
     show: boolean;
     isVictory: boolean;
     reason: string;
   }>({ show: false, isVictory: false, reason: '' });
 
-  // Чат и автоскролл
+  // Чат
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: 'you' | 'opponent'; text: string; senderName?: string }[]>([]);
+  const [messages, setMessages] = useState<{ id: string; sender: 'you' | 'opponent'; text: string; senderName?: string }[]>([]);
   const [inputText, setInputText] = useState('');
   const [isMyTurn, setIsMyTurn] = useState(true);
   const [isAiThinking, setIsAiThinking] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [serverBusyError, setServerBusyError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
 
-  // Мультиплеерный статус
-  const [multiStatus, setMultiStatus] = useState<'waiting_guest' | 'picking' | 'playing'>('picking');
+  // Онлайн PvP статус
   const [opponentNickname, setOpponentNickname] = useState<string>('Соперник');
-  const [copiedCode, setCopiedCode] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(multiplayerConfig?.timerSeconds || 0);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // ==========================================
-  // ОНЛАЙН СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE
+  // АЛГОРИТМ АВТОФИЛЬТРАЦИИ КАРТОЧЕК
+  // ==========================================
+  const executeAutoFilter = (questionText: string, answerText: string) => {
+    if (!autoFilterEnabled) return;
+    const q = questionText.toLowerCase();
+    const a = answerText.toLowerCase().trim();
+
+    const isYes = a.startsWith('да') || a.includes('верно') || a === 'да.';
+    const isNo = a.startsWith('нет') || a.includes('неверно') || a === 'нет.';
+    if (!isYes && !isNo) return;
+
+    const toExclude: string[] = [];
+
+    characters.forEach(c => {
+      if (eliminatedIds.includes(c.id) || wrongAccusedIds.includes(c.id)) return;
+      const t = c.traits;
+
+      // Плащ
+      if (q.includes('плащ')) {
+        if (isYes && !t.hasCape) toExclude.push(c.id);
+        if (isNo && t.hasCape) toExclude.push(c.id);
+      }
+      // Маска или шлем
+      else if (q.includes('маск') || q.includes('шлем')) {
+        if (isYes && !t.hasHelmetOrMask) toExclude.push(c.id);
+        if (isNo && t.hasHelmetOrMask) toExclude.push(c.id);
+      }
+      // Человек
+      else if (q.includes('человек') && !q.includes('паук')) {
+        if (isYes && !t.isHuman) toExclude.push(c.id);
+        if (isNo && t.isHuman) toExclude.push(c.id);
+      }
+      // Злодей
+      else if (q.includes('злодей') || q.includes('плохой') || q.includes('враг')) {
+        if (isYes && !t.isVillain) toExclude.push(c.id);
+        if (isNo && t.isVillain) toExclude.push(c.id);
+      }
+      // Оружие / меч / щит
+      else if (q.includes('оружи') || q.includes('меч') || q.includes('щит') || q.includes('молот')) {
+        if (isYes && !t.hasWeapon) toExclude.push(c.id);
+        if (isNo && t.hasWeapon) toExclude.push(c.id);
+      }
+      // Борода / усы
+      else if (q.includes('бород') || q.includes('ус')) {
+        if (isYes && !t.hasBeard) toExclude.push(c.id);
+        if (isNo && t.hasBeard) toExclude.push(c.id);
+      }
+    });
+
+    if (toExclude.length > 0) {
+      setEliminatedIds(prev => Array.from(new Set([...prev, ...toExclude])));
+    }
+  };
+
+  // ==========================================
+  // ОНЛАЙН СИНХРОНИЗАЦИЯ SUPABASE
   // ==========================================
   useEffect(() => {
     if (isAiMode || !multiplayerConfig || !supabase) return;
 
     const roomId = multiplayerConfig.roomId;
     const isHost = multiplayerConfig.isHost;
+    const myRole = isHost ? 'host' : 'guest';
 
-    if (isHost) {
-      setMultiStatus('waiting_guest');
-    }
-
-    // Подписка на обновление комнаты (комната, ходы, победы)
     const roomChannel = supabase
-      .channel(`room_sync_${roomId}`)
+      .channel(`sync_room_${roomId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${roomId}` },
         (payload: any) => {
           const room = payload.new;
 
-          // Подключение второго игрока
-          if (isHost && room.guest_nickname && multiStatus === 'waiting_guest') {
-            setOpponentNickname(room.guest_nickname);
-            setMultiStatus('picking');
-          }
+          if (isHost && room.guest_nickname) setOpponentNickname(room.guest_nickname);
+          if (!isHost && room.host_nickname) setOpponentNickname(room.host_nickname);
 
-          if (!isHost && room.host_nickname) {
-            setOpponentNickname(room.host_nickname);
-          }
-
-          // Оба выбрали персонажей -> игра начинается
           if (room.host_char_id && room.guest_char_id && room.status === 'playing') {
-            setMultiStatus('playing');
             const oppId = isHost ? room.guest_char_id : room.host_char_id;
             const oppHero = characters.find(c => c.id === oppId);
             if (oppHero) setOpponentChar(oppHero);
-
-            // Очередь хода
-            const myRole = isHost ? 'host' : 'guest';
             setIsMyTurn(room.current_turn === myRole);
           }
 
-          // Проверка жизней и победителя
           const myLives = isHost ? room.host_lives : room.guest_lives;
           setPlayerLives(myLives);
 
           if (room.winner) {
-            const myRole = isHost ? 'host' : 'guest';
             const won = room.winner === myRole;
             setGameResult({
               show: true,
@@ -146,25 +186,38 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       )
       .subscribe();
 
-    // Подписка на новые сообщения в чате
     const messagesChannel = supabase
-      .channel(`room_chat_${roomId}`)
+      .channel(`sync_msgs_${roomId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'room_messages', filter: `room_id=eq.${roomId}` },
         (payload: any) => {
           const msg = payload.new;
-          const myRole = isHost ? 'host' : 'guest';
           const isMe = msg.sender === myRole;
 
-          setMessages(prev => [
-            ...prev,
-            {
-              sender: isMe ? 'you' : 'opponent',
-              text: msg.text,
-              senderName: msg.sender_name
+          // Исключаем дублирование сообщений
+          setMessages(prev => {
+            if (prev.some(m => m.id === String(msg.id) || (m.sender === 'you' && isMe && m.text === msg.text))) {
+              return prev;
             }
-          ]);
+            return [
+              ...prev,
+              {
+                id: String(msg.id),
+                sender: isMe ? 'you' : 'opponent',
+                text: msg.text,
+                senderName: msg.sender_name
+              }
+            ];
+          });
+
+          // Автофильтрация для мультиплеера
+          if (!isMe && isConfirmed) {
+            const lastMyQuestion = [...messages].reverse().find(m => m.sender === 'you')?.text;
+            if (lastMyQuestion) {
+              executeAutoFilter(lastMyQuestion, msg.text);
+            }
+          }
         }
       )
       .subscribe();
@@ -173,9 +226,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       supabase.removeChannel(roomChannel);
       supabase.removeChannel(messagesChannel);
     };
-  }, [isAiMode, multiplayerConfig, characters, multiStatus]);
+  }, [isAiMode, multiplayerConfig, characters, isConfirmed, messages]);
 
-  // Таймер на ход
+  // Таймер
   useEffect(() => {
     if (!isConfirmed || isAiMode || !multiplayerConfig?.timerSeconds) return;
 
@@ -183,7 +236,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          // Время вышло — передаем ход сопернику
           if (isMyTurn && supabase && multiplayerConfig) {
             const nextTurn = multiplayerConfig.isHost ? 'guest' : 'host';
             supabase.from('rooms').update({ current_turn: nextTurn }).eq('id', multiplayerConfig.roomId);
@@ -197,25 +249,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => clearInterval(interval);
   }, [isMyTurn, isConfirmed, isAiMode, multiplayerConfig]);
 
-  // Инициализация одиночной игры с ИИ
-  const initAiMatch = () => {
+  // Старт ИИ
+  useEffect(() => {
     if (isAiMode && characters.length > 0) {
-      const randomIndex = Math.floor(Math.random() * characters.length);
-      const chosen = characters[randomIndex];
+      const chosen = characters[Math.floor(Math.random() * characters.length)];
       setOpponentChar(chosen);
       setMessages([
-        { sender: 'opponent', text: 'Я загадал персонажа! Задай свой наводящий вопрос (в формате Да/Нет).' }
+        { id: 'init', sender: 'opponent', text: 'Я загадал персонажа! Задай свой наводящий вопрос (в формате Да/Нет).' }
       ]);
-    }
-  };
-
-  useEffect(() => {
-    if (isAiMode) {
-      initAiMatch();
     }
   }, [isAiMode, characters]);
 
-  // Автоскролл чата
+  // Автоскролл
   useEffect(() => {
     if (isChatOpen) {
       setTimeout(() => {
@@ -224,50 +269,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isChatOpen, messages, isAiThinking]);
 
-  // Подтверждение своего тайного персонажа
-  const handleConfirmSecretChar = async () => {
-    if (!selectedChar) return;
-    setIsConfirmed(true);
-
-    if (!isAiMode && multiplayerConfig && supabase) {
-      const field = multiplayerConfig.isHost ? 'host_char_id' : 'guest_char_id';
-      
-      // Отправляем свой выбор в базу
-      await supabase
-        .from('rooms')
-        .update({ [field]: selectedChar.id })
-        .eq('id', multiplayerConfig.roomId);
-
-      // Проверяем, выбрал ли уже соперник
-      const { data: room } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', multiplayerConfig.roomId)
-        .single();
-
-      if (room?.host_char_id && room?.guest_char_id) {
-        // Оба выбрали — стартуем раунд!
-        await supabase
-          .from('rooms')
-          .update({ status: 'playing', current_turn: 'host' })
-          .eq('id', multiplayerConfig.roomId);
-        
-        setMultiStatus('playing');
-      }
-    }
-  };
-
-  // Отправка сообщения / вопроса
+  // ==========================================
+  // НАДЁЖНАЯ ОТПРАВКА СООБЩЕНИЙ БЕЗ БАГОВ
+  // ==========================================
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = (textOverride !== undefined ? textOverride : inputText).trim();
-    if (!textToSend || !isMyTurn || isAiThinking) return;
+    if (!textToSend || !isMyTurn || isAiThinking || isSendingMessage) return;
+
+    setIsSendingMessage(true);
+    setInputText('');
+
+    // ОПТИМИСТИЧНЫЙ UI: Сообщение моментально отображается на экране
+    const tempId = `msg_${Date.now()}`;
+    const newMsgObj = { id: tempId, sender: 'you' as const, text: textToSend };
+    const updatedHistory = [...messages, newMsgObj];
+    setMessages(updatedHistory);
 
     if (isAiMode) {
-      // РЕЖИМ С ИИ
       setServerBusyError(null);
-      const updatedHistory = [...messages, { sender: 'you' as const, text: textToSend }];
-      setMessages(updatedHistory);
-      setInputText('');
       setIsMyTurn(false);
 
       if (opponentChar) {
@@ -294,6 +313,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setServerBusyError(data.error || 'Серверы перегружены.');
             setIsAiThinking(false);
             setIsMyTurn(true);
+            setIsSendingMessage(false);
             return;
           }
 
@@ -309,11 +329,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 reason: `ИИ вычислил твоего персонажа! Это ${selectedChar.name}.`
               });
               setIsAiThinking(false);
+              setIsSendingMessage(false);
               return;
             } else {
-              setMessages([
-                ...updatedHistory,
-                { sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
+              setMessages(prev => [
+                ...prev,
+                { id: `ai_${Date.now()}`, sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
               ]);
             }
           } else {
@@ -321,40 +342,55 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               ? `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` 
               : data.answer;
 
-            setMessages([...updatedHistory, { sender: 'opponent', text: replyText }]);
+            setMessages(prev => [...prev, { id: `ai_${Date.now()}`, sender: 'opponent', text: replyText }]);
+
+            // Автофильтрация после ответа ИИ
+            executeAutoFilter(textToSend, data.answer);
           }
         } catch (err: any) {
           setServerBusyError('Ошибка соединения с сервером.');
         } finally {
           setIsAiThinking(false);
           setIsMyTurn(true);
+          setIsSendingMessage(false);
         }
       }
     } else {
-      // РЕЖИМ PVP ОНЛАЙН (ЧЕРЕЗ SUPABASE)
-      if (!supabase || !multiplayerConfig) return;
+      // ОНЛАЙН PVP: строго сначала записываем сообщение, затем передаем ход
+      if (!supabase || !multiplayerConfig) {
+        setIsSendingMessage(false);
+        return;
+      }
 
       const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
       const nextRole = multiplayerConfig.isHost ? 'guest' : 'host';
 
-      setInputText('');
+      try {
+        const { error: msgErr } = await supabase.from('room_messages').insert({
+          room_id: multiplayerConfig.roomId,
+          sender: myRole,
+          sender_name: nickname,
+          text: textToSend
+        });
 
-      // 1. Записываем сообщение в чат
-      await supabase.from('room_messages').insert({
-        room_id: multiplayerConfig.roomId,
-        sender: myRole,
-        sender_name: nickname,
-        text: textToSend
-      });
+        if (msgErr) throw msgErr;
 
-      // 2. Передаем ход сопернику
-      await supabase.from('rooms').update({
-        current_turn: nextRole
-      }).eq('id', multiplayerConfig.roomId);
+        // Только после успешной доставки сообщения передаем ход
+        await supabase.from('rooms').update({
+          current_turn: nextRole
+        }).eq('id', multiplayerConfig.roomId);
+
+        setIsMyTurn(false);
+      } catch (e: any) {
+        alert('Не удалось отправить сообщение. Попробуйте еще раз.');
+        // Откат сообщения при реальном сетевом сбое
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+      } finally {
+        setIsSendingMessage(false);
+      }
     }
   };
 
-  // Реванш
   const handleFullRematch = async () => {
     setGameResult({ show: false, isVictory: false, reason: '' });
     setSelectedChar(null);
@@ -370,9 +406,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setIsDevMode(false);
 
     if (isAiMode) {
-      initAiMatch();
+      const chosen = characters[Math.floor(Math.random() * characters.length)];
+      setOpponentChar(chosen);
+      setMessages([
+        { id: 'init', sender: 'opponent', text: 'Новая игра! Задай свой наводящий вопрос (в формате Да/Нет).' }
+      ]);
     } else if (multiplayerConfig && supabase) {
-      // Сброс комнаты в базе
       await supabase.from('rooms').update({
         host_char_id: null,
         guest_char_id: null,
@@ -386,7 +425,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   };
 
-  // Догадка персонажа
   const handleMakeGuess = async () => {
     if (!accuseChar) return;
 
@@ -413,37 +451,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         } else {
           setMessages(prev => [
             ...prev,
-            { sender: 'opponent', text: `Ты ошибся! Это не ${accuseChar.name}. Жизней осталось: ${updatedLives}/3.` }
+            { id: `err_${Date.now()}`, sender: 'opponent', text: `Ты ошибся! Это не ${accuseChar.name}. Жизней осталось: ${updatedLives}/3.` }
           ]);
         }
       }
     } else {
-      // ОНЛАЙН PVP ПРОВЕРКА
       if (!supabase || !multiplayerConfig) return;
-
       const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
       const enemyRole = multiplayerConfig.isHost ? 'guest' : 'host';
 
-      const { data: room } = await supabase
-        .from('rooms')
-        .select('*')
-        .eq('id', multiplayerConfig.roomId)
-        .single();
-
+      const { data: room } = await supabase.from('rooms').select('*').eq('id', multiplayerConfig.roomId).single();
       const enemySecretId = multiplayerConfig.isHost ? room.guest_char_id : room.host_char_id;
 
       if (accuseChar.id === enemySecretId) {
-        // ПОБЕДА!
         await supabase.from('rooms').update({
           winner: myRole,
           finish_reason: `Игрок ${nickname} верно угадал персонажа ${accuseChar.name}!`
         }).eq('id', multiplayerConfig.roomId);
       } else {
-        // ОШИБКА
         const currentLives = myRole === 'host' ? room.host_lives : room.guest_lives;
         const newLives = currentLives - 1;
         const livesField = myRole === 'host' ? 'host_lives' : 'guest_lives';
-
         setWrongAccusedIds(prev => [...prev, accuseChar.id]);
 
         if (newLives <= 0) {
@@ -453,42 +481,32 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             finish_reason: `У игрока ${nickname} закончились все 3 жизни!`
           }).eq('id', multiplayerConfig.roomId);
         } else {
-          await supabase.from('rooms').update({
-            [livesField]: newLives
-          }).eq('id', multiplayerConfig.roomId);
+          await supabase.from('rooms').update({ [livesField]: newLives }).eq('id', multiplayerConfig.roomId);
         }
       }
       setAccuseChar(null);
     }
   };
 
-  const copyRoomCode = () => {
-    if (multiplayerConfig?.roomId) {
-      navigator.clipboard.writeText(multiplayerConfig.roomId);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
-    }
-  };
-
   return (
-    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none">
+    <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none transition-colors duration-300">
       
       {/* 1. ВЕРХНИЙ БАР */}
-      <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0">
+      <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0 transition-all">
         {isConfirmed && selectedChar ? (
           <div className="flex items-center gap-2">
             <img 
               src={selectedChar.avatar} 
               alt={selectedChar.name} 
-              className="w-8 h-8 object-cover border border-white"
+              className="w-8 h-8 object-cover border border-white transition-transform active:scale-95"
             />
             <div className="flex flex-col">
-              <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой выбор:</span>
-              <span className="text-[11px] font-bold leading-tight truncate max-w-[90px]">{selectedChar.name}</span>
+              <span className="text-[8px] text-neutral-400 font-semibold uppercase">Твой герой:</span>
+              <span className="text-[11px] font-bold leading-tight truncate max-w-[100px]">{selectedChar.name}</span>
             </div>
             <button 
               onClick={() => setInfoChar(selectedChar)}
-              className="w-6 h-6 bg-white/20 border border-white/30 flex items-center justify-center active:bg-white active:text-black ml-0.5"
+              className="w-6 h-6 bg-white/20 border border-white/30 flex items-center justify-center active:bg-white active:text-black ml-0.5 transition-all"
             >
               <Info size={11} />
             </button>
@@ -500,17 +518,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5">
-          {/* Таймер хода */}
-          {!isAiMode && multiplayerConfig && multiplayerConfig.timerSeconds > 0 && isConfirmed && (
-            <div className={`flex items-center gap-1 px-1.5 py-0.5 border text-[10px] font-mono font-bold ${
-              timeLeft <= 10 ? 'border-red-500 text-red-400 bg-red-950/30 animate-pulse' : 'border-white/20 text-neutral-300'
-            }`}>
-              <Clock size={11} />
-              <span>{timeLeft}s</span>
-            </div>
+          {/* Индикатор автофильтрации */}
+          {autoFilterEnabled && isConfirmed && (
+            <span className="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <Sparkles size={10} />
+              АВТО
+            </span>
           )}
 
-          {/* Сердечки */}
           {isConfirmed && (
             <div className="flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10">
               {[1, 2, 3].map(i => (
@@ -529,42 +544,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
           <button 
             onClick={() => setIsSettingsOpen(true)}
-            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black transition-all"
           >
             <Settings size={13} />
           </button>
 
           <button 
             onClick={() => setShowExitConfirm(true)}
-            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black"
+            className="p-1.5 bg-white/10 border border-white/20 flex items-center justify-center text-neutral-300 active:bg-white active:text-black transition-all"
           >
             <LogOut size={13} />
           </button>
         </div>
       </div>
 
-      {/* БАННЕР ОЖИДАНИЯ СОПЕРНИКА В МУЛЬТИПЛЕЕРЕ */}
-      {!isAiMode && multiStatus === 'waiting_guest' && multiplayerConfig && (
-        <div className="w-full bg-white/10 border-b border-white/20 p-3 flex items-center justify-between z-20 animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Loader2 size={14} className="animate-spin text-white" />
-            <div className="flex flex-col">
-              <span className="text-[9px] uppercase font-mono text-neutral-400">Код вашей комнаты:</span>
-              <span className="text-sm font-mono font-black tracking-widest text-white">{multiplayerConfig.roomId}</span>
-            </div>
-          </div>
-          <button
-            onClick={copyRoomCode}
-            className="px-3 py-1.5 bg-white text-black font-black text-xs uppercase flex items-center gap-1 active:bg-neutral-300"
-          >
-            {copiedCode ? <CheckCheck size={13} /> : <Copy size={13} />}
-            <span>{copiedCode ? 'Скопировано!' : 'Копировать'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* 2. ИГРОВОЕ ПОЛЕ 6 НА 6 */}
-      <div className={`w-full flex-1 px-1.5 py-1 flex items-center justify-center min-h-0 overflow-hidden ${accuseChar ? 'blur-md' : ''}`}>
+      {/* 2. ИГРОВОЕ ПОЛЕ 6 НА 6 С ПЛАВНЫМИ АНИМАЦИЯМИ */}
+      <div className={`w-full flex-1 px-1.5 py-1 flex items-center justify-center min-h-0 overflow-hidden transition-all duration-300 ${accuseChar ? 'blur-md scale-[0.98]' : ''}`}>
         <div className="w-full grid grid-cols-6 gap-1 max-w-sm place-content-center">
           {characters.map(char => {
             const isWrong = wrongAccusedIds.includes(char.id);
@@ -589,31 +584,31 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   longPressTimer.current = setTimeout(() => setAccuseChar(char), 450);
                 }}
                 onMouseUp={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
-                className={`relative aspect-square w-full border transition-all duration-150 flex flex-col justify-end p-0.5 overflow-hidden ${
+                className={`relative aspect-square w-full border transition-all duration-300 ease-out flex flex-col justify-end p-0.5 overflow-hidden ${
                   !isConfirmed && isCurrentSelected
-                    ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_12px_white] z-10'
+                    ? 'border-white ring-2 ring-white scale-95 shadow-[0_0_15px_white] z-10'
                     : isWrong
                     ? 'border-red-600 bg-red-950/70 ring-2 ring-red-600 opacity-80 cursor-not-allowed'
                     : isEliminated
-                    ? 'opacity-20 grayscale border-transparent bg-neutral-950'
-                    : 'border-white/25 active:scale-95 bg-neutral-900'
+                    ? 'opacity-20 grayscale border-transparent bg-neutral-950 scale-95'
+                    : 'border-white/25 hover:scale-[1.02] active:scale-90 bg-neutral-900'
                 }`}
               >
                 <img 
                   src={char.avatar} 
                   alt={char.name} 
-                  className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${isWrong ? 'sepia saturate-200 hue-rotate-[320deg]' : ''}`}
+                  className={`absolute inset-0 w-full h-full object-cover pointer-events-none transition-all duration-300 ${isWrong ? 'sepia saturate-200 hue-rotate-[320deg]' : ''}`}
                   onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                 />
 
                 {isWrong && (
-                  <div className="absolute top-1 right-1 z-20 text-red-500 bg-black/90 p-0.5 border border-red-500/50">
+                  <div className="absolute top-1 right-1 z-20 text-red-500 bg-black/90 p-0.5 border border-red-500/50 animate-pulse">
                     <XCircle size={10} />
                   </div>
                 )}
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent pointer-events-none" />
-                <span className={`relative z-10 text-[6.5px] font-black uppercase text-center leading-none truncate drop-shadow ${isWrong ? 'text-red-400' : 'text-white'}`}>
+                <span className={`relative z-10 text-[6.5px] font-black uppercase text-center leading-none truncate drop-shadow transition-colors ${isWrong ? 'text-red-400' : 'text-white'}`}>
                   {char.name}
                 </span>
               </div>
@@ -622,9 +617,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 3. ПОДТВЕРЖДЕНИЕ ВЫБОРА */}
+      {/* 3. СТАРТОВОЕ ПОДТВЕРЖДЕНИЕ ВЫБОРА */}
       {!isConfirmed && (
-        <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-[max(env(safe-area-inset-bottom),14px)] flex flex-col gap-2 z-20">
+        <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-[max(env(safe-area-inset-bottom),14px)] flex flex-col gap-2 z-20 animate-in slide-in-from-bottom duration-300">
           {selectedChar ? (
             <>
               <div className="flex items-center justify-between">
@@ -641,14 +636,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </div>
                 <button 
                   onClick={() => setInfoChar(selectedChar)}
-                  className="p-1.5 bg-white/10 border border-white/20 shrink-0 text-neutral-300 ml-2"
+                  className="p-1.5 bg-white/10 border border-white/20 shrink-0 text-neutral-300 ml-2 active:bg-white active:text-black transition-colors"
                 >
                   <Info size={13} />
                 </button>
               </div>
               <button
-                onClick={handleConfirmSecretChar}
-                className="w-full py-3 bg-white text-black font-black text-xs active:bg-neutral-300 transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5"
+                onClick={() => {
+                  if (isAiMode) setIsConfirmed(true);
+                  else {
+                    // Мультиплеерный выбор
+                    if (supabase && multiplayerConfig) {
+                      const f = multiplayerConfig.isHost ? 'host_char_id' : 'guest_char_id';
+                      supabase.from('rooms').update({ [f]: selectedChar.id }).eq('id', multiplayerConfig.roomId);
+                    }
+                    setIsConfirmed(true);
+                  }
+                }}
+                className="w-full py-3 bg-white text-black font-black text-xs active:bg-neutral-300 transition-transform active:scale-[0.98] uppercase tracking-wider flex items-center justify-center gap-1.5"
               >
                 <Check size={14} />
                 Подтвердить выбор
@@ -662,13 +667,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 4. ПАНЕЛЬ ХОДА И ЧАТА */}
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА */}
       {isConfirmed && (
         <div className="shrink-0 px-3 pt-2 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
               {isAiMode ? (
-                isAiThinking ? 'ИИ думает...' : isMyTurn ? '● Ваш ход' : '○ Ход соперника...'
+                isAiThinking ? 'ИИ думает...' : isDevMode ? 'DEV UNLOCKED' : isMyTurn ? '● Ваш ход' : '○ Ход соперника...'
               ) : (
                 isMyTurn ? `● Ваш ход (${nickname})` : `○ Ход соперника (${opponentNickname})...`
               )}
@@ -677,27 +682,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           </div>
           <button
             onClick={() => setIsChatOpen(true)}
-            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:bg-neutral-300 transition-colors relative"
+            className="w-10 h-10 bg-white text-black border border-white flex items-center justify-center active:scale-95 transition-all relative shadow-lg"
           >
             <MessageSquare size={16} />
             {isMyTurn && !isAiThinking && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 animate-pulse" />
             )}
           </button>
         </div>
       )}
 
-      {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] */}
+      {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] (Раса, фракция, способности, вики) */}
       {infoChar && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] select-none animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] select-none animate-in fade-in duration-300">
           <header className="flex justify-between items-center pb-3 border-b border-white/20">
             <div>
-              <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-mono">Досье</span>
+              <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-mono">Досье персонажа</span>
               <h2 className="text-base font-black uppercase text-white truncate max-w-[260px]">{infoChar.name}</h2>
             </div>
             <button 
               onClick={() => setInfoChar(null)}
-              className="w-9 h-9 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black"
+              className="w-9 h-9 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
             >
               <X size={18} />
             </button>
@@ -708,23 +713,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <img 
                 src={infoChar.avatar} 
                 alt={infoChar.name} 
-                className="max-h-[38vh] w-auto object-contain"
+                className="max-h-[38vh] w-auto object-contain transition-transform"
                 onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
               />
             </div>
 
+            {/* Карточка ключевых характеристик */}
             <div className="grid grid-cols-2 gap-2 text-[11px] p-3 bg-white/5 border border-white/10">
-              <p><span className="text-neutral-400">Цвета:</span> <b className="text-white">{infoChar.traits.mainColors.join(', ')}</b></p>
+              <p><span className="text-neutral-400">Раса / Вид:</span> <b className="text-white">{infoChar.traits.race}</b></p>
+              <p><span className="text-neutral-400">Фракция:</span> <b className="text-white">{infoChar.traits.fraction}</b></p>
               <p><span className="text-neutral-400">Шлем/Маска:</span> <b className="text-white">{infoChar.traits.hasHelmetOrMask ? 'Да' : 'Нет'}</b></p>
-              <p><span className="text-neutral-400">Человек:</span> <b className="text-white">{infoChar.traits.isHuman ? 'Да' : 'Нет'}</b></p>
-              <p><span className="text-neutral-400">Злодей:</span> <b className="text-white">{infoChar.traits.isVillain ? 'Да' : 'Нет'}</b></p>
               <p><span className="text-neutral-400">Плащ:</span> <b className="text-white">{infoChar.traits.hasCape ? 'Да' : 'Нет'}</b></p>
               <p><span className="text-neutral-400">Оружие:</span> <b className="text-white">{infoChar.traits.hasWeapon ? 'Да' : 'Нет'}</b></p>
-              <p className="col-span-2 text-neutral-300 italic pt-1 border-t border-white/10">{infoChar.traits.notes}</p>
+              <p><span className="text-neutral-400">Борода / Усы:</span> <b className="text-white">{infoChar.traits.hasBeard ? 'Да' : 'Нет'}</b></p>
+              <p className="col-span-2"><span className="text-neutral-400">Цвета:</span> <b className="text-white">{infoChar.traits.mainColors.join(', ')}</b></p>
+              <p className="col-span-2 border-t border-white/10 pt-1.5"><span className="text-neutral-400">Силы:</span> <b className="text-neutral-200">{infoChar.traits.powers}</b></p>
             </div>
 
+            {/* Выписка из Википедии */}
             <div className="p-3 bg-white/5 border border-white/10 text-xs text-neutral-300 leading-relaxed font-sans">
-              <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Выписка:</span>
+              <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Архивная выписка:</span>
               {infoChar.wiki}
             </div>
           </div>
@@ -732,7 +740,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <footer className="pt-2 border-t border-white/20">
             <button
               onClick={() => setInfoChar(null)}
-              className="w-full py-3 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300"
+              className="w-full py-3 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300 transition-colors"
             >
               Закрыть досье
             </button>
@@ -742,7 +750,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* 6. ПРЕДУПРЕЖДЕНИЕ ПРИ ВЫХОДЕ */}
       {showExitConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-5 select-none animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-5 select-none animate-in fade-in duration-200">
           <div className="w-full max-w-xs bg-neutral-950 border border-white/30 p-5 flex flex-col items-center text-center gap-3 shadow-2xl">
             <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <AlertTriangle size={24} />
@@ -759,13 +767,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   setShowExitConfirm(false);
                   onBackToMenu();
                 }}
-                className="w-full py-3 bg-red-600 text-white font-black text-xs uppercase tracking-wider active:bg-red-700"
+                className="w-full py-3 bg-red-600 text-white font-black text-xs uppercase tracking-wider active:bg-red-700 transition-colors"
               >
                 Уверен
               </button>
               <button
                 onClick={() => setShowExitConfirm(false)}
-                className="w-full py-3 bg-white/10 border border-white/20 text-neutral-300 font-bold text-xs uppercase tracking-wider active:bg-white/20"
+                className="w-full py-3 bg-white/10 border border-white/20 text-neutral-300 font-bold text-xs uppercase tracking-wider active:bg-white/20 transition-colors"
               >
                 Я передумал
               </button>
@@ -774,11 +782,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 7. ОКНО УГАДЫВАНИЯ (С КНОПКОЙ [i]) */}
+      {/* 7. ОКНО УГАДЫВАНИЯ С КНОПКОЙ [i] */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-5 animate-in fade-in duration-200"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
@@ -792,7 +800,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               />
               <button
                 onClick={() => setInfoChar(accuseChar)}
-                className="absolute -top-2 -right-2 w-7 h-7 bg-white text-black font-black border border-black flex items-center justify-center shadow-md active:bg-neutral-300"
+                className="absolute -top-2 -right-2 w-7 h-7 bg-white text-black font-black border border-black flex items-center justify-center shadow-md active:bg-neutral-300 transition-colors"
               >
                 <Info size={14} />
               </button>
@@ -800,19 +808,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             <h4 className="text-sm font-black uppercase">{accuseChar.name}</h4>
             <p className="text-[11px] text-neutral-400">
-              Это секретный персонаж соперника? При ошибке персонаж подсветится красным и сгорит 1 сердечко ({playerLives}/3).
+              Это секретный персонаж соперника? При ошибке персонаж станет красным и сгорит 1 сердечко ({playerLives}/3).
             </p>
             
             <div className="flex gap-2 w-full pt-1">
               <button
                 onClick={() => setAccuseChar(null)}
-                className="flex-1 py-3 bg-white/10 border border-white/20 text-xs font-bold"
+                className="flex-1 py-3 bg-white/10 border border-white/20 text-xs font-bold transition-colors"
               >
                 Отмена
               </button>
               <button
                 onClick={handleMakeGuess}
-                className="flex-1 py-3 bg-white text-black text-xs font-black uppercase"
+                className="flex-1 py-3 bg-white text-black text-xs font-black uppercase transition-colors"
               >
                 Выбрать
               </button>
@@ -821,9 +829,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ЧАТ РАУНДА */}
+      {/* 8. ЧАТ РАУНДА (ОПТИМИСТИЧНЫЙ И АВТОСКРОЛЛ) */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)]">
+        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom),16px)] animate-in slide-in-from-bottom duration-300">
           <div className="flex justify-between items-center pb-3 border-b border-white/20">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black uppercase tracking-wider">
@@ -841,7 +849,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
             <button 
               onClick={() => setIsChatOpen(false)}
-              className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center"
+              className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
             >
               <X size={16} />
             </button>
@@ -850,10 +858,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5">
             {messages.map((m, idx) => (
               <div 
-                key={idx} 
-                className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line ${
+                key={m.id || idx} 
+                className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line transition-all ${
                   m.sender === 'you' 
                     ? 'ml-auto bg-white text-black border-white font-medium' 
+                    : m.text.startsWith('[Резерв')
+                    ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
+                    : m.text.startsWith('[DEV')
+                    ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
                     : 'mr-auto bg-white/10 text-white border-white/20'
                 }`}
               >
@@ -881,7 +893,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             ))}
 
             {isAiThinking && (
-              <div className="mr-auto p-3 text-xs bg-white/5 border border-white/10 flex items-center gap-2 text-neutral-400">
+              <div className="mr-auto p-3 text-xs bg-white/5 border border-white/10 flex items-center gap-2 text-neutral-400 animate-pulse">
                 <Loader2 size={12} className="animate-spin" />
                 <span>ИИ размышляет над ходом...</span>
               </div>
@@ -898,7 +910,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     const lastUserMsg = [...messages].reverse().find(m => m.sender === 'you')?.text;
                     if (lastUserMsg) handleSendMessage(lastUserMsg);
                   }}
-                  className="py-2 bg-white text-black font-black text-[10px] uppercase flex items-center justify-center gap-1.5 active:bg-neutral-300"
+                  className="py-2 bg-white text-black font-black text-[10px] uppercase flex items-center justify-center gap-1.5 active:bg-neutral-300 transition-colors"
                 >
                   <RotateCcw size={12} />
                   Повторить попытку
@@ -909,26 +921,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <div ref={chatEndRef} />
           </div>
 
-          {/* Быстрые ответы */}
+          {/* Быстрые ответы (мгновенная отправка) */}
           <div className="flex gap-1.5 pb-2">
             <button 
-              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Да'); }}
-              disabled={!isMyTurn || isAiThinking}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
+              onClick={() => handleSendMessage('Да')}
+              disabled={!isMyTurn || isAiThinking || isSendingMessage}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
             >
               Да
             </button>
             <button 
-              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Нет'); }}
-              disabled={!isMyTurn || isAiThinking}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
+              onClick={() => handleSendMessage('Нет')}
+              disabled={!isMyTurn || isAiThinking || isSendingMessage}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
             >
               Нет
             </button>
             <button 
-              onClick={() => { if (isMyTurn && !isAiThinking) handleSendMessage('Не уверен / Частично'); }}
-              disabled={!isMyTurn || isAiThinking}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30"
+              onClick={() => handleSendMessage('Не уверен / Частично')}
+              disabled={!isMyTurn || isAiThinking || isSendingMessage}
+              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
             >
               Частично
             </button>
@@ -938,16 +950,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <input 
               type="text"
               value={inputText}
-              disabled={!isMyTurn || isAiThinking}
+              disabled={!isMyTurn || isAiThinking || isSendingMessage}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={isAiThinking ? "ИИ думает..." : isMyTurn ? "Задайте наводящий вопрос..." : "Ожидание хода..."}
-              className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white disabled:opacity-40"
+              placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос..."}
+              className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
             />
             <button
               onClick={() => handleSendMessage()}
-              disabled={!isMyTurn || !inputText.trim() || isAiThinking}
-              className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center"
+              disabled={!isMyTurn || !inputText.trim() || isAiThinking || isSendingMessage}
+              className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center transition-all"
             >
               <Send size={14} />
             </button>
@@ -967,6 +979,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         onSaveNickname={onSaveNickname}
         aiTone={aiTone}
         onSelectAiTone={onSelectAiTone}
+        autoFilterEnabled={autoFilterEnabled}
+        onToggleAutoFilter={onToggleAutoFilter}
       />
 
       {/* 10. МОДАЛКА РЕЗУЛЬТАТА */}
