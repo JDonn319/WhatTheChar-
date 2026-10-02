@@ -23,7 +23,7 @@ export const App: React.FC = () => {
   const [activeUniverse, setActiveUniverse] = useState<string>('all');
   const [isAiMode, setIsAiMode] = useState(false);
 
-  // Данные мультиплеера
+  // Мультиплеерные данные
   const [multiConfig, setMultiConfig] = useState<{
     roomId: string;
     isHost: boolean;
@@ -53,15 +53,24 @@ export const App: React.FC = () => {
     localStorage.setItem('wtc_ai_tone', tone);
   };
 
+  // Автофильтрация
+  const [autoFilterEnabled, setAutoFilterEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('wtc_autofilter') === 'true';
+  });
+
+  const handleToggleAutoFilter = (val: boolean) => {
+    setAutoFilterEnabled(val);
+    localStorage.setItem('wtc_autofilter', String(val));
+  };
+
   // Модель ИИ
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash-8b');
 
   // Фон
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
 
-  // Одиночная игра с ИИ
   const startSinglePlayer = (universe: UniverseType) => {
     const chars = getRandom36(universe);
     setActiveCharacters(chars);
@@ -71,7 +80,6 @@ export const App: React.FC = () => {
     setIsTransitioning(true);
   };
 
-  // Создание или вход в онлайн-комнату
   const startMultiplayer = async (config: {
     roomId: string;
     themes: UniverseType[];
@@ -80,12 +88,11 @@ export const App: React.FC = () => {
     isHost: boolean;
   }) => {
     if (!supabase) {
-      alert('Ошибка: Supabase не подключен. Проверьте переменные VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY.');
+      alert('Ошибка: Supabase не подключен. Проверьте переменные окружения.');
       return;
     }
 
     if (config.isHost) {
-      // 1. ХОСТ: формирует 36 персонажей и создает лобби
       let pool = CHARACTERS_DB;
       if (!config.themes.includes('all')) {
         pool = CHARACTERS_DB.filter(c => config.themes.includes(c.universe));
@@ -124,10 +131,9 @@ export const App: React.FC = () => {
         timerSeconds: config.timerSeconds
       });
 
-      setGameState('lobby'); // Открываем зал ожидания
+      setGameState('lobby');
 
     } else {
-      // 2. ГОСТЬ: присоединяется к комнате хоста
       const { data: room, error } = await supabase
         .from('rooms')
         .select('*')
@@ -170,16 +176,15 @@ export const App: React.FC = () => {
         timerSeconds: room.timer_seconds || 0
       });
 
-      setGameState('lobby'); // Открываем зал ожидания
+      setGameState('lobby');
     }
   };
 
-  // Следим за изменениями в лобби комнаты через сокеты
   useEffect(() => {
     if (gameState !== 'lobby' || !multiConfig || !supabase) return;
 
     const channel = supabase
-      .channel(`lobby_listen_${multiConfig.roomId}`)
+      .channel(`lobby_${multiConfig.roomId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${multiConfig.roomId}` },
@@ -200,7 +205,6 @@ export const App: React.FC = () => {
     };
   }, [gameState, multiConfig]);
 
-  // Выход из комнаты
   const handleLeaveLobby = async () => {
     if (multiConfig && supabase) {
       if (multiConfig.isHost) {
@@ -214,7 +218,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <main className="fixed inset-0 w-full h-full bg-black text-white overflow-hidden font-sans">
+    <main className="fixed inset-0 w-full h-full bg-black text-white overflow-hidden font-sans transition-all">
       {backgroundUrl && (
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50 blur-[2px] scale-105 pointer-events-none transition-all duration-700"
@@ -236,7 +240,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 1. Главное меню */}
       {!isAppLoading && !isTransitioning && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
@@ -249,10 +252,11 @@ export const App: React.FC = () => {
           onSaveNickname={handleSaveNickname}
           aiTone={aiTone}
           onSelectAiTone={handleSelectAiTone}
+          autoFilterEnabled={autoFilterEnabled}
+          onToggleAutoFilter={handleToggleAutoFilter}
         />
       )}
 
-      {/* 2. Зал ожидания (Лобби комнаты с кнопкой выхода внизу) */}
       {!isAppLoading && gameState === 'lobby' && multiConfig && (
         <LobbyRoomModal
           roomId={multiConfig.roomId}
@@ -266,7 +270,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 3. Игровое поле */}
       {!isAppLoading && !isTransitioning && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
@@ -284,6 +287,8 @@ export const App: React.FC = () => {
           onSaveNickname={handleSaveNickname}
           aiTone={aiTone}
           onSelectAiTone={handleSelectAiTone}
+          autoFilterEnabled={autoFilterEnabled}
+          onToggleAutoFilter={handleToggleAutoFilter}
           multiplayerConfig={multiConfig}
         />
       )}
