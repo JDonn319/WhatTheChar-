@@ -12,7 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ 
       answer: 'Ключ AI_API_KEY пустой в Vercel!',
       aiQuestion: null,
-      guessId: null
+      guessId: null,
+      eliminatedCandidateIds: []
     });
   }
 
@@ -29,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const userText = (playerQuestion || '').trim();
 
-  // 1. ТУМБЛЕР РЕЖИМА РАЗРАБОТЧИКА (ucansay)
+  // Режим разработчика
   if (userText.toLowerCase() === 'ucansay') {
     const newState = !isDevMode;
     return res.status(200).json({
@@ -38,11 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : '[DEV MODE OFF]: Ограничения включены. Игра продолжается.',
       aiQuestion: null,
       guessId: null,
-      toggledDevMode: newState
+      toggledDevMode: newState,
+      eliminatedCandidateIds: []
     });
   }
 
-  // Если режим разработчика включен — отвечаем на любые вопросы без фильтра
   if (isDevMode) {
     try {
       const devUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
@@ -53,42 +54,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       const devData = await devRes.json();
       const reply = devData.candidates?.[0]?.content?.parts?.[0]?.text || 'OK';
-      return res.status(200).json({ answer: `[DEV]: ${reply}`, aiQuestion: null, guessId: null });
+      return res.status(200).json({ answer: `[DEV]: ${reply}`, aiQuestion: null, guessId: null, eliminatedCandidateIds: [] });
     } catch (e: any) {
-      return res.status(200).json({ answer: `[DEV ERROR]: ${e.message}`, aiQuestion: null, guessId: null });
+      return res.status(200).json({ answer: `[DEV ERROR]: ${e.message}`, aiQuestion: null, guessId: null, eliminatedCandidateIds: [] });
     }
   }
 
-  // Настройка характера / тона
   let toneInstruction = '';
   if (aiTone === 'sarcastic') {
-    toneInstruction = `
-ТОН И ХАРАКТЕР: САРКАСТИЧНЫЙ И ЯЗВИТЕЛЬНЫЙ.
-- Подкалывай игрока за банальные или очевидные вопросы.
-- Иронизируй, подшучивай над его дедукцией, веди себя как самоуверенный гений-соперник.
-- Отвечай кратко, но с едким юмором.`;
+    toneInstruction = 'ТОН: САРКАСТИЧНЫЙ. Подкалывай игрока за банальные вопросы, язви, держи тон интеллектуального превосходства.';
   } else if (aiTone === 'unhinged') {
-    toneInstruction = `
-ТОН И ХАРАКТЕР: РАСШАТАННЫЙ, НЕСТАБИЛЬНЫЙ, ЗЕРКАЛЬНЫЙ.
-- Зеркаль тон игрока: если он пишет грубо или дерзит — огрызайся, используй жёсткий дворовый сленг или мат при необходимости.
-- Если игрок задает нелепый вопрос — откровенно высмей его.
-- Твое настроение непредсказуемо скачет от психопатического восторга до злобной насмешки.`;
+    toneInstruction = 'ТОН: РАСШАТАННЫЙ. Зеркаль агрессию или простоту игрока, эмоционально реагируй, сленг.';
   } else {
-    toneInstruction = `
-ТОН И ХАРАКТЕР: СТАНДАРТНЫЙ.
-- Веди себя спокойно, лаконично, вежливо и строго по правилам.`;
-  }
-
-  // Специфика вселенных
-  let universeRules = '';
-  if (universe === 'the_boys') {
-    universeRules = `Во вселенной «Пацанов» нет пришельцев (все внешне люди). Спрашивай о суперсилах (сыворотка V), членстве в Семёрке, работе на Vought.`;
-  } else if (universe === 'marvel') {
-    universeRules = `Учитывай расу: человек, мутант, андроид, пришелец, бог. Мститель или злодей.`;
-  } else if (universe === 'invincible') {
-    universeRules = `Учитывай вилтрумитов, пришельцев, роботов, демонов. Член Стражей или захватчик.`;
-  } else if (universe === 'star_wars') {
-    universeRules = `Учитывай Силу (джедай/ситх), световой меч, дроидов, расу, Империю или Повстанцев.`;
+    toneInstruction = 'ТОН: СТАНДАРТНЫЙ. Спокойный, лаконичный и точный.';
   }
 
   const formattedHistory = (chatHistory || [])
@@ -99,15 +77,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const lastAiQuestionText = lastAiMessage ? lastAiMessage.text : '';
 
   const promptText = `
-Ты играешь в настольную логическую дуэль «Угадай, кто?» (Guess Who).
-На поле 36 персонажей:
+Ты играешь в настольную дуэль «Угадай, кто?».
+Список 36 персонажей:
 ${JSON.stringify(charactersPool?.map((c: any) => ({ id: c.id, name: c.name, traits: c.traits })))}
 
 ТВОЙ СЕКРЕТНЫЙ ПЕРСОНАЖ: "${aiSecretChar?.name}" (id: ${aiSecretChar?.id}).
-Его приметы: ${JSON.stringify(aiSecretChar?.traits)}.
-Его описание: "${aiSecretChar?.wiki}".
+Приметы: ${JSON.stringify(aiSecretChar?.traits)}.
+Описание: "${aiSecretChar?.wiki}".
 
-${universeRules}
 ${toneInstruction}
 
 ИСТОРИЯ ДИАЛОГА:
@@ -116,35 +93,19 @@ ${formattedHistory || 'Раунд начался.'}
 ТВОЙ ПРОШЛЫЙ ВОПРОС: "${lastAiQuestionText}"
 СООБЩЕНИЕ ИГРОКА СЕЙЧАС: "${userText}"
 
-ФУНДАМЕНТАЛЬНЫЕ ЗАКОНЫ ПРАВИЛ:
-1. ЗАПРЕТ ОТКРЫТЫХ И ПРЯМЫХ ВОПРОСОВ:
-   Если игрок спрашивает напрямую: «какого цвета...», «как называется...», «кто ты...», «какие способности...», «опиши внешность...» — ТЫ ОБЯЗАН ОТКАЗАТЬСЯ ОТВЕЧАТЬ!
-   Скажи: "По правилам игры запрещено задавать прямые вопросы. Вопрос должен быть закрытым (например: 'Его костюм синий?' или 'Он летает?'). Переформулируй свой вопрос!"
-   В "aiQuestion" верни null. Не давай никаких зацепок!
-
-2. ЛАКОНИЧНОСТЬ И НИКАКИХ ЛИШНИХ ПОЯСНЕНИЙ:
-   - Если утверждение игрока неверно — ответь просто "Нет". Не поясняй "Нет, потому что он только прыгает" — это читерская подсказка!
-   - Отвечай предельно кратко: "Да", "Нет" или "Частично".
-   - НИ ПРИ КАКИХ УСЛОВИЯХ НЕ НАЗЫВАЙ ИМЯ СВОЕГО ГЕРОЯ!
-
-3. ПРОВЕРКА ОТВЕТА НА ТВОЙ ВОПРОС:
-   Если ты задал вопрос, а игрок проигнорировал его и сразу спросил своё — скажи: "Сначала ответь на мой вопрос: '${lastAiQuestionText}'!", а в "aiQuestion" верни null.
-
-4. ЕСЛИ ИГРОК ТОЛЬКО ОТВЕТИЛ ("Да", "Нет", "Частично"):
-   Прими ответ, учти в дедукции и напиши: "Принято. Теперь твоя очередь — задавай свой вопрос.". В "aiQuestion" верни null.
-
-5. ЕСЛИ ИГРОК НАЗВАЛ СВОЕГО ГЕРОЯ:
-   Игрок раскрыл себя. Поставь id в "guessId" и напиши победную реплику в выбранном тоне.
-
-6. ТВОЙ ВСТРЕЧНЫЙ ВОПРОС:
-   Задавай только наводящие закрытые вопросы (по плащу, маске, оружию, полету, цвету, полу).
-   Не повторяй вопросы из истории.
+ПРАВИЛА:
+1. НИКОГДА НЕ ПРОИЗНОСИ И НЕ СПОЙЛЕРИ ИМЯ СВОЕГО ГЕРОЯ! Только «мой персонаж», «он», «она».
+2. ТОЧНОСТЬ ФИЗИКИ: Халк не летает (прыгает), Человек-паук не летает (паутина), Тони летает на репульсорах. Отвечай честно.
+3. МОДЕРАЦИЯ: Вопросы с выбором («он летает или прыгает?») — разрешены! Отвечай прямо («Он прыгает, а не летает»). Бракуй только прямые вопросы на имя («как зовут?», «кто ты?»).
+4. АНАЛИЗ ОТСЕВА: В массив "eliminatedCandidateIds" внеси id тех персонажей из 36, которые на 100% не подходят под уже подтвержденные в чате факты.
+5. Если игрок назвал своего персонажа прямо — ставь его id в "guessId".
 
 ОТВЕТЬ СТРОГО В ВИДЕ JSON:
 {
   "answer": "твой ответ",
-  "aiQuestion": "твой закрытый вопрос (или null)",
-  "guessId": null
+  "aiQuestion": "твой новый наводящий вопрос (или null)",
+  "guessId": null,
+  "eliminatedCandidateIds": []
 }
 `;
 
@@ -185,8 +146,7 @@ ${formattedHistory || 'Раунд начался.'}
         const parsed = JSON.parse(cleanJson.substring(start, end + 1));
         return res.status(200).json({
           ...parsed,
-          usedModel: model,
-          wasSwitched: model !== modelsQueue[0]
+          usedModel: model
         });
       }
     } catch (err: any) {
@@ -194,9 +154,8 @@ ${formattedHistory || 'Раунд начался.'}
     }
   }
 
-  // Если сервера перегружены — ВОПРОС НЕ ЗАДАЕТСЯ
   return res.status(503).json({
-    error: `Серверы временно заняты (${lastError}). Повторите попытку через секунду.`,
+    error: `Серверы временно заняты (${lastError}). Повторите попытку.`,
     isBusy: true
   });
 }
