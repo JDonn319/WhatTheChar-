@@ -53,10 +53,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [nickError, setNickError] = useState('');
   const [showAutoFilterAlert, setShowAutoFilterAlert] = useState(false);
 
+  // Обновленный список фонов строго по запросу
   const bgOptions = [
-    { id: 'default', label: 'Неон (По умолчанию)', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000' },
-    { id: 'space', label: 'Космос', url: '/background2.jpg' },
-    { id: 'meadow', label: 'Поляна', url: '/background3.jpg' },
+    { id: 'castle', label: 'Замок (Стандартный)', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000' },
+    { id: 'arcane', label: 'Аркейн', url: '/background2.jpg' },
+    { id: 'pattern', label: 'Паттерн', url: '/background3.jpg' },
+    { id: 'landscape', label: 'Пейзаж', url: '/background4.jpg' },
     { id: 'black', label: 'Чистый чёрный', url: '' }
   ];
 
@@ -81,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] select-none animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 select-none animate-in fade-in duration-300">
       
       <header className="flex justify-between items-center pb-4 border-b border-white/20">
         <span className="text-sm font-black uppercase tracking-wider text-white">Параметры игры</span>
@@ -130,7 +132,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </button>
             </div>
             
-            {/* Тумблер */}
             <button
               onClick={() => onToggleAutoFilter(!autoFilterEnabled)}
               className={`w-11 h-6 p-0.5 border transition-colors flex items-center ${
@@ -214,7 +215,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </section>
 
-        {/* Фон */}
+        {/* Фоновые изображения */}
         <section className="flex flex-col gap-2 pb-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
             <ImageIcon size={13} />
@@ -250,7 +251,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </button>
       </footer>
 
-      {/* Предупреждение об автофильтрации */}
+      {/* Окно предупреждения об автофильтрации */}
       {showAutoFilterAlert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-5 animate-in fade-in duration-200">
           <div className="w-full max-w-xs bg-neutral-950 border border-amber-500/50 p-5 flex flex-col items-center text-center gap-3 shadow-2xl">
@@ -260,7 +261,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div>
               <h4 className="text-xs font-black uppercase text-white">Внимание: Автофильтр</h4>
               <p className="text-[11px] text-neutral-300 mt-1 leading-relaxed">
-                Система анализирует чат по ключевым словам («плащ», «маска», «человек», «борода» и др.). При сложных или нестандартных ответах соперника система может ошибиться. Рекомендуется перепроверять доску самостоятельно!
+                Система анализирует чат по ключевым словам. При сложных или нестандартных ответах соперника система может ошибиться. Рекомендуется перепроверять доску самостоятельно!
               </p>
             </div>
             <button
