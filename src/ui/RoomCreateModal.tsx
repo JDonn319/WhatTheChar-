@@ -25,14 +25,12 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
 
   const [tab, setTab] = useState<'create' | 'join'>('create');
   
-  // Параметры создания
   const [themeMode, setThemeMode] = useState<'all' | 'single' | 'double'>('all');
   const [selectedSingleTheme, setSelectedSingleTheme] = useState<UniverseType>('marvel');
   const [selectedDoubleThemes, setSelectedDoubleThemes] = useState<UniverseType[]>(['marvel', 'the_boys']);
-  const [timerSeconds, setTimerSeconds] = useState<number>(0); // 0 = без лимита
+  const [timerSeconds, setTimerSeconds] = useState<number>(0);
   const [password, setPassword] = useState<string>('');
 
-  // Параметры входа
   const [joinRoomCode, setJoinRoomCode] = useState<string>('');
   const [joinPassword, setJoinPassword] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -90,7 +88,7 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-[max(env(safe-area-inset-bottom),20px)] select-none animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-5 pt-[max(env(safe-area-inset-top),20px)] pb-3 select-none animate-in fade-in duration-200">
       
       {/* Шапка */}
       <header className="flex justify-between items-center pb-4 border-b border-white/20">
@@ -106,7 +104,7 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
         </button>
       </header>
 
-      {/* Вкладки: Создать / Войти */}
+      {/* Вкладки */}
       <div className="flex border border-white/20 max-w-sm w-full mx-auto my-3">
         <button
           onClick={() => { setTab('create'); setErrorMsg(''); }}
@@ -128,12 +126,9 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
         </button>
       </div>
 
-      {/* Контент модалки */}
       <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-5 max-w-sm w-full mx-auto">
-        
         {tab === 'create' ? (
           <>
-            {/* 1. Режим выбора вселенных */}
             <section className="flex flex-col gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1">
                 <Sparkles size={12} />
@@ -167,7 +162,6 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
                 </button>
               </div>
 
-              {/* Выбор одной темы */}
               {themeMode === 'single' && (
                 <div className="grid grid-cols-2 gap-1.5 pt-2">
                   {universes.map(u => (
@@ -184,7 +178,6 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
                 </div>
               )}
 
-              {/* Выбор двух тем (микс) */}
               {themeMode === 'double' && (
                 <div className="grid grid-cols-2 gap-1.5 pt-2">
                   {universes.map(u => {
@@ -206,7 +199,6 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
               )}
             </section>
 
-            {/* 2. Таймер на ход */}
             <section className="flex flex-col gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1">
                 <Clock size={12} />
@@ -232,7 +224,6 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
               </div>
             </section>
 
-            {/* 3. Пароль */}
             <section className="flex flex-col gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 flex items-center gap-1">
                 <Lock size={12} />
@@ -248,7 +239,6 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
             </section>
           </>
         ) : (
-          /* Вкладка входа по коду */
           <div className="flex flex-col gap-3 py-4">
             <div className="flex flex-col gap-1.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
@@ -285,25 +275,23 @@ export const RoomCreateModal: React.FC<RoomCreateModalProps> = ({
             )}
           </div>
         )}
-
       </div>
 
-      {/* Футер */}
-      <footer className="pt-3 border-t border-white/20 max-w-sm w-full mx-auto flex flex-col gap-2">
+      <footer className="pt-2 border-t border-white/20 max-w-sm w-full mx-auto flex flex-col gap-2">
         <div className="text-[10px] font-mono text-neutral-400 text-center">
           Игрок: <span className="text-white font-bold">{nickname}</span>
         </div>
         {tab === 'create' ? (
           <button
             onClick={handleCreate}
-            className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300"
+            className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300 transition-colors"
           >
             Создать комнату и начать
           </button>
         ) : (
           <button
             onClick={handleJoin}
-            className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300"
+            className="w-full py-3.5 bg-white text-black font-black text-xs uppercase tracking-wider active:bg-neutral-300 transition-colors"
           >
             Войти в дуэль
           </button>
