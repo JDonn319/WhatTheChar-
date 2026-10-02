@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Info, MessageSquare, Send, LogOut, Check, Loader2, Heart, 
+  Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, 
   Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck, 
   Clock, Sparkles 
 } from 'lucide-react';
@@ -84,11 +84,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
 
-  // Онлайн PvP статус
   const [opponentNickname, setOpponentNickname] = useState<string>('Соперник');
   const [timeLeft, setTimeLeft] = useState<number>(multiplayerConfig?.timerSeconds || 0);
 
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // Реф самого контейнера скролла сообщений (без сдвига экрана!)
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Безопасный внутренний автоскролл списка сообщений
+  const scrollChatToBottom = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    if (isChatOpen) {
+      scrollChatToBottom();
+      const timer = setTimeout(scrollChatToBottom, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [isChatOpen, messages, isAiThinking]);
 
   // Мультиплеер сокеты
   useEffect(() => {
@@ -149,7 +164,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               {
                 id: String(msg.id),
                 sender: isMe ? 'you' : 'opponent',
-                text: msg.text,
+                text: msg.text || '',
                 senderName: msg.sender_name
               }
             ];
@@ -185,7 +200,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     return () => clearInterval(interval);
   }, [isMyTurn, isConfirmed, isAiMode, multiplayerConfig]);
 
-  // Старт ИИ
+  // Старт одиночной игры с ИИ
   useEffect(() => {
     if (isAiMode && characters.length > 0) {
       const chosen = characters[Math.floor(Math.random() * characters.length)];
@@ -195,15 +210,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       ]);
     }
   }, [isAiMode, characters]);
-
-  // Автоскролл
-  useEffect(() => {
-    if (isChatOpen) {
-      setTimeout(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
-    }
-  }, [isChatOpen, messages, isAiThinking]);
 
   // Отправка сообщений
   const handleSendMessage = async (textOverride?: string) => {
@@ -254,7 +260,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setIsDevMode(data.toggledDevMode);
           }
 
-          // Автоматический контекстный отсев персонажей ИИ
           if (data.eliminatedCandidateIds && Array.isArray(data.eliminatedCandidateIds)) {
             setEliminatedIds(prev => Array.from(new Set([...prev, ...data.eliminatedCandidateIds])));
           }
@@ -270,7 +275,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               setIsSendingMessage(false);
               return;
             } else {
-              // ИИ ошибся в догадке -> теряет голубое сердечко
               setAiLives(prev => {
                 const nextLives = prev - 1;
                 if (nextLives <= 0) {
@@ -285,13 +289,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
               setMessages(prev => [
                 ...prev,
-                { id: `ai_${Date.now()}`, sender: 'opponent', text: `${data.answer}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
+                { id: `ai_${Date.now()}`, sender: 'opponent', text: `${data.answer || ''}\n\nЯ думаю, что ты загадал ${data.guessId}... О нет, я ошибся!` }
               ]);
             }
           } else {
             const replyText = data.aiQuestion 
-              ? `${data.answer}\n\nМой вопрос: ${data.aiQuestion}` 
-              : data.answer;
+              ? `${data.answer || ''}\n\nМой вопрос: ${data.aiQuestion}` 
+              : (data.answer || '');
 
             setMessages(prev => [...prev, { id: `ai_${Date.now()}`, sender: 'opponent', text: replyText }]);
           }
@@ -471,7 +475,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5">
-          {/* Сердечки игрока (красные) */}
+          {autoFilterEnabled && isConfirmed && (
+            <span className="text-[9px] font-mono px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <Sparkles size={10} />
+              АВТО
+            </span>
+          )}
+
           {isConfirmed && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-white/5 border border-white/10">
               {[1, 2, 3].map(i => (
@@ -488,7 +498,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
 
-          {/* Голубые сердечки ИИ */}
           {isConfirmed && isAiMode && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-sky-950/30 border border-sky-500/20">
               {[1, 2, 3].map(i => (
@@ -580,7 +589,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 3. СТАРТОВОЕ ПОДТВЕРЖДЕНИЕ ВЫБОРА (Без нижней сейф-зоны) */}
+      {/* 3. СТАРТОВОЕ ПОДТВЕРЖДЕНИЕ ВЫБОРА (БЕЗ СЕЙФ-ЗОНЫ СНИЗУ) */}
       {!isConfirmed && (
         <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-3 flex flex-col gap-2 z-20 animate-in slide-in-from-bottom duration-300">
           {selectedChar ? (
@@ -632,9 +641,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА (Без нижней сейф-зоны) */}
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА (БЕЗ СЕЙФ-ЗОНЫ СНИЗУ) */}
       {isConfirmed && (
-        <div className="shrink-0 px-3 pt-2 pb-2.5 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
+        <div className="shrink-0 px-3 pt-2 pb-2 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-300">
               {isAiMode ? (
@@ -657,9 +666,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] (БЕЗ КРЕСТИКА, ТОЛЬКО КНОПКА СНИЗУ) */}
+      {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] (ТОЛЬКО КНОПКА СНИЗУ) */}
       {infoChar && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-4 select-none animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 select-none animate-in fade-in duration-300">
           <header className="pb-3 border-b border-white/20">
             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-mono">Досье персонажа</span>
             <h2 className="text-base font-black uppercase text-white truncate max-w-full">{infoChar.name}</h2>
@@ -692,7 +701,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           </div>
 
-          {/* Единственная кнопка закрытия */}
           <footer className="pt-2 border-t border-white/20">
             <button
               onClick={() => setInfoChar(null)}
@@ -738,7 +746,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 7. ОКНО УГАДЫВАНИЯ С АВТОСВОРАЧИВАНИЕМ ПРИ НАЖАТИИ [i] */}
+      {/* 7. ОКНО УГАДЫВАНИЯ С КНОПКОЙ [i] */}
       {accuseChar && (
         <div 
           onClick={() => setAccuseChar(null)}
@@ -757,8 +765,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               <button
                 onClick={() => {
                   const target = accuseChar;
-                  setAccuseChar(null); // Плавно закрываем окно угадывания
-                  setInfoChar(target);  // Открываем полное досье
+                  setAccuseChar(null);
+                  setInfoChar(target);
                 }}
                 className="absolute -top-2 -right-2 w-7 h-7 bg-white text-black font-black border border-black flex items-center justify-center shadow-md active:bg-neutral-300 transition-colors"
               >
@@ -768,7 +776,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             <h4 className="text-sm font-black uppercase">{accuseChar.name}</h4>
             <p className="text-[11px] text-neutral-400">
-              Это секретный персонаж соперника? При ошибке персонаж подсветится красным и сгорит 1 сердечко ({playerLives}/3).
+              Это секретный персонаж соперника? При ошибке персонаж станет красным и сгорит 1 сердечко ({playerLives}/3).
             </p>
             
             <div className="flex gap-2 w-full pt-1">
@@ -789,14 +797,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ЧАТ РАУНДА (Без нижней сейф-зоны) */}
+      {/* 8. ИСПРАВЛЕННЫЙ ЧАТ: БЕЗ ВЫЛЕТОВ И БЕЗ БАГОВ СКРОЛЛА SAFARI */}
       {isChatOpen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 animate-in slide-in-from-bottom duration-300">
-          <div className="flex justify-between items-center pb-3 border-b border-white/20">
+        <div className="fixed inset-0 z-[100] bg-neutral-950 text-white flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3">
+          
+          {/* Шапка чата с крестиком закрытия */}
+          <div className="flex justify-between items-center pb-3 border-b border-white/20 shrink-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider">
+              <span className="text-xs font-black uppercase tracking-wider text-white">
                 {isAiMode ? 'Диалог с ИИ' : `Дуэль: ${nickname} vs ${opponentNickname}`}
               </span>
+              {isDevMode && (
+                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/40">
+                  DEV
+                </span>
+              )}
               <div className="flex items-center gap-1 pl-2">
                 {[1, 2, 3].map(i => (
                   <Heart
@@ -807,50 +822,60 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 ))}
               </div>
             </div>
+            
+            {/* Рабочая кнопка выхода из чата */}
             <button 
+              type="button"
               onClick={() => setIsChatOpen(false)}
-              className="w-8 h-8 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
+              className="w-9 h-9 bg-white/10 border border-white/20 flex items-center justify-center active:bg-white active:text-black transition-colors"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5">
-            {messages.map((m, idx) => (
-              <div 
-                key={m.id || idx} 
-                className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line transition-all ${
-                  m.sender === 'you' 
-                    ? 'ml-auto bg-white text-black border-white font-medium' 
-                    : m.text.startsWith('[Резерв')
-                    ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
-                    : m.text.startsWith('[DEV')
-                    ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
-                    : 'mr-auto bg-white/10 text-white border-white/20'
-                }`}
-              >
-                {!isAiMode && m.senderName && (
-                  <span className="block text-[9px] font-mono opacity-50 uppercase mb-1">
-                    {m.senderName}
-                  </span>
-                )}
-                {m.text}
-
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(m.text);
-                    setCopiedIndex(idx);
-                    setTimeout(() => setCopiedIndex(null), 1500);
-                  }}
-                  className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
-                    m.sender === 'you' ? 'border-black/20 text-black' : 'border-white/20 text-neutral-400'
+          {/* Контейнер сообщений: внутренний скролл, не трогающий экран iPhone */}
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5 min-h-0"
+          >
+            {messages.map((m, idx) => {
+              const msgText = m.text || '';
+              return (
+                <div 
+                  key={m.id || idx} 
+                  className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line transition-all ${
+                    m.sender === 'you' 
+                      ? 'ml-auto bg-white text-black border-white font-medium' 
+                      : msgText.startsWith('[Резерв')
+                      ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
+                      : msgText.startsWith('[DEV')
+                      ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
+                      : 'mr-auto bg-white/10 text-white border-white/20'
                   }`}
                 >
-                  {copiedIndex === idx ? <CheckCheck size={11} /> : <Copy size={11} />}
-                  <span>{copiedIndex === idx ? 'Скопировано' : 'Копировать'}</span>
-                </button>
-              </div>
-            ))}
+                  {!isAiMode && m.senderName && (
+                    <span className="block text-[9px] font-mono opacity-50 uppercase mb-1">
+                      {m.senderName}
+                    </span>
+                  )}
+                  {msgText}
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(msgText);
+                      setCopiedIndex(idx);
+                      setTimeout(() => setCopiedIndex(null), 1500);
+                    }}
+                    className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
+                      m.sender === 'you' ? 'border-black/20 text-black' : 'border-white/20 text-neutral-400'
+                    }`}
+                  >
+                    {copiedIndex === idx ? <CheckCheck size={11} /> : <Copy size={11} />}
+                    <span>{copiedIndex === idx ? 'Скопировано' : 'Копировать'}</span>
+                  </button>
+                </div>
+              );
+            })}
 
             {isAiThinking && (
               <div className="mr-auto p-3 text-xs bg-white/5 border border-white/10 flex items-center gap-2 text-neutral-400 animate-pulse">
@@ -877,53 +902,58 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 </button>
               </div>
             )}
-
-            <div ref={chatEndRef} />
           </div>
 
-          {/* Быстрые ответы */}
-          <div className="flex gap-1.5 pb-2">
-            <button 
-              onClick={() => handleSendMessage('Да')}
-              disabled={!isMyTurn || isAiThinking || isSendingMessage}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
-            >
-              Да
-            </button>
-            <button 
-              onClick={() => handleSendMessage('Нет')}
-              disabled={!isMyTurn || isAiThinking || isSendingMessage}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
-            >
-              Нет
-            </button>
-            <button 
-              onClick={() => handleSendMessage('Не уверен / Частично')}
-              disabled={!isMyTurn || isAiThinking || isSendingMessage}
-              className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
-            >
-              Частично
-            </button>
+          {/* Нижняя часть чата: кнопки быстрых ответов и ввод */}
+          <div className="shrink-0 flex flex-col gap-2 pt-2 border-t border-white/20">
+            <div className="flex gap-1.5">
+              <button 
+                type="button"
+                onClick={() => handleSendMessage('Да')}
+                disabled={!isMyTurn || isAiThinking || isSendingMessage}
+                className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
+              >
+                Да
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleSendMessage('Нет')}
+                disabled={!isMyTurn || isAiThinking || isSendingMessage}
+                className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
+              >
+                Нет
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleSendMessage('Не уверен / Частично')}
+                disabled={!isMyTurn || isAiThinking || isSendingMessage}
+                className="flex-1 py-1.5 bg-white/10 border border-white/20 text-[10px] font-bold uppercase active:bg-white active:text-black disabled:opacity-30 transition-colors"
+              >
+                Частично
+              </button>
+            </div>
+
+            <div className="flex gap-1.5">
+              <input 
+                type="text"
+                value={inputText}
+                disabled={!isMyTurn || isAiThinking || isSendingMessage}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос..."}
+                className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                disabled={!isMyTurn || !inputText.trim() || isAiThinking || isSendingMessage}
+                className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center transition-all"
+              >
+                <Send size={14} />
+              </button>
+            </div>
           </div>
 
-          <div className="flex gap-1.5 pt-2 border-t border-white/20">
-            <input 
-              type="text"
-              value={inputText}
-              disabled={!isMyTurn || isAiThinking || isSendingMessage}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос..."}
-              className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
-            />
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={!isMyTurn || !inputText.trim() || isAiThinking || isSendingMessage}
-              className="px-4 py-3 bg-white text-black font-black text-xs active:bg-neutral-300 disabled:opacity-30 flex items-center justify-center transition-all"
-            >
-              <Send size={14} />
-            </button>
-          </div>
         </div>
       )}
 
