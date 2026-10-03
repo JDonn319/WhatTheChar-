@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, 
+  Info, MessageSquare, Send, LogOut, Check, Loader2, Heart, 
   Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck, 
-  Clock, Sparkles 
+  Clock, Sparkles, X, User
 } from 'lucide-react';
 import { Character } from '../data/characters';
 import { GameResultModal } from './GameResultModal';
@@ -113,7 +113,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isChatOpen, messages, isAiThinking]);
 
-  // Онлайн синхронизация Supabase
+  // ==========================================
+  // ОНЛАЙН СИНХРОНИЗАЦИЯ SUPABASE + ПЕРВИЧНАЯ ПОДГРУЗКА
+  // ==========================================
   useEffect(() => {
     if (isAiMode || !multiplayerConfig || !supabase) return;
 
@@ -121,6 +123,54 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const isHost = multiplayerConfig.isHost;
     const myRole = isHost ? 'host' : 'guest';
 
+    // 1. Первичная загрузка актуального состояния комнаты и сообщений
+    const loadInitialRoomData = async () => {
+      // Подтягиваем данные комнаты
+      const { data: room } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('id', roomId)
+        .single();
+
+      if (room) {
+        if (isHost && room.guest_nickname) setOpponentNickname(room.guest_nickname);
+        if (!isHost && room.host_nickname) setOpponentNickname(room.host_nickname);
+
+        const oppChosenId = isHost ? room.guest_char_id : room.host_char_id;
+        if (oppChosenId) {
+          setOpponentConfirmed(true);
+          const hero = characters.find(c => c.id === oppChosenId);
+          if (hero) setOpponentChar(hero);
+        }
+
+        if (room.status === 'playing') {
+          setIsMyTurn(room.current_turn === myRole);
+        }
+
+        const myLives = isHost ? room.host_lives : room.guest_lives;
+        setPlayerLives(myLives);
+      }
+
+      // Подтягиваем историю сообщений, чтобы не было пустоты
+      const { data: msgs } = await supabase
+        .from('room_messages')
+        .select('*')
+        .eq('room_id', roomId)
+        .order('id', { ascending: true });
+
+      if (msgs && msgs.length > 0) {
+        setMessages(msgs.map((m: any) => ({
+          id: String(m.id),
+          sender: m.sender === myRole ? 'you' : 'opponent',
+          text: m.text || '',
+          senderName: m.sender_name
+        })));
+      }
+    };
+
+    loadInitialRoomData();
+
+    // 2. Реалтайм-подписка на комнату
     const roomChannel = supabase
       .channel(`sync_room_game_${roomId}`)
       .on(
@@ -139,7 +189,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             if (hero) setOpponentChar(hero);
           }
 
-          // Оба выбрали героев -> запуск жеребьёвки 3D кубом
           if (room.status === 'rolling' && !showDiceRoll) {
             const starterNick = room.current_turn === 'host' ? room.host_nickname : room.guest_nickname;
             setDiceWinner(starterNick);
@@ -165,6 +214,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       )
       .subscribe();
 
+    // 3. Реалтайм-подписка на сообщения
     const messagesChannel = supabase
       .channel(`sync_msgs_game_${roomId}`)
       .on(
@@ -367,7 +417,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       }
     } else {
-      // ОНЛАЙН ДУЭЛЬ
       if (!supabase || !multiplayerConfig) {
         setIsSendingMessage(false);
         return;
@@ -523,7 +572,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       {gameResult.show && gameResult.isVictory && <ConfettiEffect />}
       {gameResult.show && !gameResult.isVictory && <ScreenCrackEffect />}
 
-      {/* 1. ВЕРХНИЙ БАР */}
+      {/* 1. ВЕРХНИЙ БАР (БЕЗ СЕЙФ-ЗОНЫ СНИЗУ) */}
       <div className="w-full pt-[max(env(safe-area-inset-top),14px)] pb-2 px-3 bg-black/85 backdrop-blur-xl border-b border-white/20 z-20 flex items-center justify-between shrink-0 transition-all">
         {isConfirmed && selectedChar ? (
           <div className="flex items-center gap-2">
@@ -553,6 +602,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5">
+          {/* Сердечки игрока (красные) */}
           {isConfirmed && opponentConfirmed && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-white/5 border border-white/10">
               {[1, 2, 3].map(i => (
@@ -569,6 +619,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
 
+          {/* Голубые сердечки ИИ */}
           {isConfirmed && isAiMode && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-sky-950/30 border border-sky-500/20">
               {[1, 2, 3].map(i => (
@@ -660,7 +711,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 3. ПОДТВЕРЖДЕНИЕ ВЫБОРА / ОЖИДАНИЕ ВТОРОГО */}
+      {/* 3. ПОДТВЕРЖДЕНИЕ ВЫБОРА / ОЖИДАНИЕ ВТОРОГО (БЕЗ СЕЙФ-ЗОНЫ СНИЗУ) */}
       {!isConfirmed ? (
         <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-3 flex flex-col gap-2 z-20 animate-in slide-in-from-bottom duration-300">
           {selectedChar ? (
@@ -708,7 +759,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       ) : null}
 
-      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА */}
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА (БЕЗ СЕЙФ-ЗОНЫ СНИЗУ) */}
       {isConfirmed && opponentConfirmed && (
         <div className="shrink-0 px-3 pt-2 pb-2 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
@@ -864,21 +915,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ИСПРАВЛЕННЫЙ ЧАТ */}
+      {/* 8. ИСПРАВЛЕННЫЙ ЧАТ: С ПОЛНОЙ ИНФОРМАЦИЕЙ ДЛЯ ВТОРОГО ИГРОКА */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[100] bg-neutral-950 text-white flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3">
           
+          {/* Шапка чата */}
           <div className="flex justify-between items-center pb-3 border-b border-white/20 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black uppercase tracking-wider text-white">
                 {isAiMode ? 'Диалог с ИИ' : `Дуэль: ${nickname} vs ${opponentNickname}`}
               </span>
-              {isDevMode && (
-                <span className="text-[9px] font-mono px-1.5 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/40">
-                  DEV
-                </span>
-              )}
-              <div className="flex items-center gap-1 pl-2">
+              
+              {/* Статус хода: сразу видно, кто сейчас ходит */}
+              <span className={`text-[9px] font-mono px-2 py-0.5 border font-bold ${
+                isMyTurn ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/10 text-neutral-400 border-white/20'
+              }`}>
+                {isMyTurn ? 'ВАШ ХОД' : `ХОДИТ ${opponentNickname.toUpperCase()}`}
+              </span>
+
+              <div className="flex items-center gap-1 pl-1">
                 {[1, 2, 3].map(i => (
                   <Heart
                     key={i}
@@ -898,48 +953,67 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </button>
           </div>
 
+          {/* Сообщения или Информативная заглушка (вместо черного квадрата!) */}
           <div 
             ref={chatContainerRef}
             className="flex-1 overflow-y-auto py-3 flex flex-col gap-2.5 min-h-0"
           >
-            {messages.map((m, idx) => {
-              const msgText = m.text || '';
-              return (
-                <div 
-                  key={m.id || idx} 
-                  className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line transition-all ${
-                    m.sender === 'you' 
-                      ? 'ml-auto bg-white text-black border-white font-medium' 
-                      : msgText.startsWith('[Резерв')
-                      ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
-                      : msgText.startsWith('[DEV')
-                      ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
-                      : 'mr-auto bg-white/10 text-white border-white/20'
-                  }`}
-                >
-                  {!isAiMode && m.senderName && (
-                    <span className="block text-[9px] font-mono opacity-50 uppercase mb-1">
-                      {m.senderName}
-                    </span>
-                  )}
-                  {msgText}
-
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(msgText);
-                      setCopiedIndex(idx);
-                      setTimeout(() => setCopiedIndex(null), 1500);
-                    }}
-                    className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
-                      m.sender === 'you' ? 'border-black/20 text-black' : 'border-white/20 text-neutral-400'
+            {messages.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-3 text-neutral-400 my-auto">
+                <div className="w-12 h-12 border border-white/20 bg-white/5 flex items-center justify-center">
+                  <MessageSquare size={22} className="text-white animate-pulse" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-black uppercase text-white tracking-wider">
+                    {isMyTurn ? 'Вы ходите первым!' : `Первым ходит ${opponentNickname}`}
+                  </span>
+                  <p className="text-[11px] text-neutral-400 max-w-[240px] leading-relaxed">
+                    {isMyTurn
+                      ? 'Задайте свой первый закрытый вопрос сопернику (Да/Нет) в поле ниже.'
+                      : `Ожидайте, пока ${opponentNickname} сформулирует и отправит свой первый вопрос.`}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              messages.map((m, idx) => {
+                const msgText = m.text || '';
+                return (
+                  <div 
+                    key={m.id || idx} 
+                    className={`group relative max-w-[85%] p-3 text-xs leading-relaxed border whitespace-pre-line transition-all ${
+                      m.sender === 'you' 
+                        ? 'ml-auto bg-white text-black border-white font-medium' 
+                        : msgText.startsWith('[Резерв')
+                        ? 'mx-auto bg-amber-500/10 text-amber-300 border-amber-500/30 text-[10px]'
+                        : msgText.startsWith('[DEV')
+                        ? 'mr-auto bg-blue-950/40 text-blue-300 border-blue-500/40 font-mono text-[11px]'
+                        : 'mr-auto bg-white/10 text-white border-white/20'
                     }`}
                   >
-                    {copiedIndex === idx ? <CheckCheck size={11} /> : <Copy size={11} />}
-                    <span>{copiedIndex === idx ? 'Скопировано' : 'Копировать'}</span>
-                  </button>
-                </div>
-              );
-            })}
+                    {!isAiMode && m.senderName && (
+                      <span className="block text-[9px] font-mono opacity-50 uppercase mb-1">
+                        {m.senderName}
+                      </span>
+                    )}
+                    {msgText}
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(msgText);
+                        setCopiedIndex(idx);
+                        setTimeout(() => setCopiedIndex(null), 1500);
+                      }}
+                      className={`mt-1.5 pt-1 border-t flex items-center gap-1 text-[9px] font-mono opacity-60 hover:opacity-100 ${
+                        m.sender === 'you' ? 'border-black/20 text-black' : 'border-white/20 text-neutral-400'
+                      }`}
+                    >
+                      {copiedIndex === idx ? <CheckCheck size={11} /> : <Copy size={11} />}
+                      <span>{copiedIndex === idx ? 'Скопировано' : 'Копировать'}</span>
+                    </button>
+                  </div>
+                );
+              })
+            )}
 
             {isAiThinking && (
               <div className="mr-auto p-3 text-xs bg-white/5 border border-white/10 flex items-center gap-2 text-neutral-400 animate-pulse">
@@ -968,6 +1042,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             )}
           </div>
 
+          {/* Нижняя часть чата: кнопки ответов и поле ввода */}
           <div className="shrink-0 flex flex-col gap-2 pt-2 border-t border-white/20">
             <div className="flex gap-1.5">
               <button 
@@ -1003,7 +1078,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 disabled={!isMyTurn || isAiThinking || isSendingMessage}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос..."}
+                placeholder={
+                  isAiThinking 
+                    ? "ИИ думает..." 
+                    : isMyTurn 
+                    ? "Ваш ход! Задайте вопрос или ответьте..." 
+                    : `Ожидайте ход ${opponentNickname}...`
+                }
                 className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
               <button
