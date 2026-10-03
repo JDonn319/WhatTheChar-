@@ -4,7 +4,6 @@ import { MainMenu } from '../ui/MainMenu';
 import { GameBoard } from '../ui/GameBoard';
 import { TransitionLoader } from '../ui/TransitionLoader';
 import { LobbyRoomModal } from '../ui/LobbyRoomModal';
-import { DiceRollOverlay } from '../ui/DiceRollOverlay';
 import { Character, CHARACTERS_DB, getRandom36, UniverseType } from '../data/characters';
 import { AiToneType } from '../ui/SettingsModal';
 import { supabase } from '../lib/supabase';
@@ -24,10 +23,6 @@ export const App: React.FC = () => {
   const [activeUniverse, setActiveUniverse] = useState<string>('all');
   const [isAiMode, setIsAiMode] = useState(false);
 
-  // Жеребьевка 3D-кубом
-  const [showDiceRoll, setShowDiceRoll] = useState(false);
-  const [diceWinner, setDiceWinner] = useState<string>('');
-
   // Мультиплеер
   const [multiConfig, setMultiConfig] = useState<{
     roomId: string;
@@ -36,7 +31,6 @@ export const App: React.FC = () => {
     guestNickname: string | null;
     themes: string[];
     timerSeconds: number;
-    isReady: boolean;
   } | null>(null);
 
   const [nickname, setNickname] = useState<string>(() => {
@@ -68,7 +62,6 @@ export const App: React.FC = () => {
 
   const [selectedModel, setSelectedModel] = useState<string>('gemini-1.5-flash-8b');
 
-  // Фоны (по умолчанию — Замок)
   const [backgroundUrl, setBackgroundUrl] = useState<string>(
     'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000'
   );
@@ -112,7 +105,9 @@ export const App: React.FC = () => {
         status: 'waiting',
         current_turn: 'host',
         host_lives: 3,
-        guest_lives: 3
+        guest_lives: 3,
+        host_char_id: null,
+        guest_char_id: null
       });
 
       if (error) {
@@ -130,8 +125,7 @@ export const App: React.FC = () => {
         hostNickname: nickname,
         guestNickname: null,
         themes: config.themes,
-        timerSeconds: config.timerSeconds,
-        isReady: false
+        timerSeconds: config.timerSeconds
       });
 
       setGameState('lobby');
@@ -152,9 +146,14 @@ export const App: React.FC = () => {
         return;
       }
 
+      if (room.guest_nickname && room.guest_nickname !== nickname) {
+        alert('В этой комнате уже играют двое!');
+        return;
+      }
+
       await supabase
         .from('rooms')
-        .update({ guest_nickname: nickname, status: 'waiting' })
+        .update({ guest_nickname: nickname })
         .eq('id', config.roomId);
 
       setActiveCharacters(room.characters);
@@ -167,25 +166,14 @@ export const App: React.FC = () => {
         hostNickname: room.host_nickname,
         guestNickname: nickname,
         themes: room.themes || ['all'],
-        timerSeconds: room.timer_seconds || 0,
-        isReady: false
+        timerSeconds: room.timer_seconds || 0
       });
 
       setGameState('lobby');
     }
   };
 
-  // Переключение готовности
-  const handleToggleReady = async () => {
-    if (!multiConfig || !supabase) return;
-    const nextReady = !multiConfig.isReady;
-    setMultiConfig(prev => prev ? { ...prev, isReady: nextReady } : null);
-
-    const readyField = multiConfig.isHost ? 'host_char_id' : 'guest_char_id';
-    await supabase.from('rooms').update({ [readyField]: nextReady ? 'READY' : null }).eq('id', multiConfig.roomId);
-  };
-
-  // Прослушка готовности обоих игроков в лобби
+  // Прослушка перехода из лобби к выбору героев
   useEffect(() => {
     if (gameState !== 'lobby' || !multiConfig || !supabase) return;
 
@@ -200,22 +188,9 @@ export const App: React.FC = () => {
             setMultiConfig(prev => prev ? { ...prev, guestNickname: r.guest_nickname } : null);
           }
 
-          // Оба нажали «ГОТОВ» -> запускаем 3D куб
-          if (r.host_char_id === 'READY' && r.guest_char_id === 'READY') {
-            const firstMover = Math.random() < 0.5 ? r.host_nickname : r.guest_nickname;
-            setDiceWinner(firstMover);
-            setShowDiceRoll(true);
-
-            // Фиксируем первого в базе
-            if (multiConfig.isHost) {
-              const startRole = firstMover === r.host_nickname ? 'host' : 'guest';
-              supabase.from('rooms').update({
-                current_turn: startRole,
-                host_char_id: null,
-                guest_char_id: null,
-                status: 'picking'
-              }).eq('id', multiConfig.roomId);
-            }
+          // Хост нажал «К выбору персонажей» -> статус стал picking
+          if (r.status === 'picking') {
+            setGameState('playing');
           }
         }
       )
@@ -226,12 +201,18 @@ export const App: React.FC = () => {
     };
   }, [gameState, multiConfig]);
 
+  const handleHostStartPicking = async () => {
+    if (!multiConfig || !supabase) return;
+    await supabase.from('rooms').update({ status: 'picking' }).eq('id', multiConfig.roomId);
+    setGameState('playing');
+  };
+
   const handleLeaveLobby = async () => {
     if (multiConfig && supabase) {
       if (multiConfig.isHost) {
         await supabase.from('rooms').delete().eq('id', multiConfig.roomId);
       } else {
-        await supabase.from('rooms').update({ guest_nickname: null, guest_char_id: null }).eq('id', multiConfig.roomId);
+        await supabase.from('rooms').update({ guest_nickname: null }).eq('id', multiConfig.roomId);
       }
     }
     setMultiConfig(null);
@@ -259,20 +240,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 3D-Куб жеребьевки */}
-      {showDiceRoll && multiConfig && (
-        <DiceRollOverlay
-          player1Name={multiConfig.hostNickname}
-          player2Name={multiConfig.guestNickname || 'Гость'}
-          starterName={diceWinner}
-          onFinish={() => {
-            setShowDiceRoll(false);
-            setIsTransitioning(true);
-          }}
-        />
-      )}
-
-      {!isAppLoading && !isTransitioning && !showDiceRoll && gameState === 'menu' && (
+      {!isAppLoading && !isTransitioning && gameState === 'menu' && (
         <MainMenu 
           onStartSingle={startSinglePlayer}
           onStartMulti={startMultiplayer}
@@ -289,7 +257,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {!isAppLoading && !showDiceRoll && gameState === 'lobby' && multiConfig && (
+      {!isAppLoading && gameState === 'lobby' && multiConfig && (
         <LobbyRoomModal
           roomId={multiConfig.roomId}
           isHost={multiConfig.isHost}
@@ -297,13 +265,12 @@ export const App: React.FC = () => {
           guestNickname={multiConfig.guestNickname}
           themes={multiConfig.themes}
           timerSeconds={multiConfig.timerSeconds}
-          isReady={multiConfig.isReady}
-          onToggleReady={handleToggleReady}
+          onProceedToGame={handleHostStartPicking}
           onLeaveRoom={handleLeaveLobby}
         />
       )}
 
-      {!isAppLoading && !isTransitioning && !showDiceRoll && gameState === 'playing' && (
+      {!isAppLoading && !isTransitioning && gameState === 'playing' && (
         <GameBoard 
           characters={activeCharacters}
           isAiMode={isAiMode}
