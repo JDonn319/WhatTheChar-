@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Info, MessageSquare, Send, LogOut, Check, Loader2, Heart, 
+  Info, MessageSquare, Send, X, LogOut, Check, Loader2, Heart, 
   Settings, AlertTriangle, XCircle, RotateCcw, Copy, CheckCheck, 
   Clock, Sparkles 
 } from 'lucide-react';
@@ -71,19 +71,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [playerLives, setPlayerLives] = useState<number>(3);
   const [aiLives, setAiLives] = useState<number>(3);
 
-  // Окно результата
+  // Результат
   const [gameResult, setGameResult] = useState<{
     show: boolean;
     isVictory: boolean;
     reason: string;
   }>({ show: false, isVictory: false, reason: '' });
 
-  // Чат и очередность
+  // Чат
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ id: string; sender: 'you' | 'opponent'; text: string; senderName?: string }[]>([]);
   const [inputText, setInputText] = useState('');
   
-  // В мультиплеере изначально ход заблокирован, пока кубик не решит
   const [isMyTurn, setIsMyTurn] = useState(isAiMode);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
@@ -91,7 +90,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isDevMode, setIsDevMode] = useState(false);
 
-  // Жеребьевка кубиком
+  // Жеребьевка 3D-кубиком
   const [showDiceRoll, setShowDiceRoll] = useState(false);
   const [diceWinner, setDiceWinner] = useState('');
 
@@ -114,9 +113,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isChatOpen, messages, isAiThinking]);
 
-  // ==========================================
-  // ОНЛАЙН СИНХРОНИЗАЦИЯ ЧЕРЕЗ SUPABASE
-  // ==========================================
+  // Онлайн синхронизация Supabase
   useEffect(() => {
     if (isAiMode || !multiplayerConfig || !supabase) return;
 
@@ -135,7 +132,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           if (isHost && room.guest_nickname) setOpponentNickname(room.guest_nickname);
           if (!isHost && room.host_nickname) setOpponentNickname(room.host_nickname);
 
-          // Проверяем подтверждение соперника
           const oppChosenId = isHost ? room.guest_char_id : room.host_char_id;
           if (oppChosenId) {
             setOpponentConfirmed(true);
@@ -143,14 +139,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             if (hero) setOpponentChar(hero);
           }
 
-          // Оба выбрали персонажей -> СТАРТ ЖЕРЕБЬЕВКИ КУБИКОМ
+          // Оба выбрали героев -> запуск жеребьёвки 3D кубом
           if (room.status === 'rolling' && !showDiceRoll) {
             const starterNick = room.current_turn === 'host' ? room.host_nickname : room.guest_nickname;
             setDiceWinner(starterNick);
             setShowDiceRoll(true);
           }
 
-          // Игра началась
           if (room.status === 'playing') {
             setIsMyTurn(room.current_turn === myRole);
           }
@@ -236,7 +231,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isAiMode, characters]);
 
-  // Подтверждение своего тайного выбора
+  // Подтверждение выбора своего героя
   const handleConfirmCharacter = async () => {
     if (!selectedChar) return;
     setIsConfirmed(true);
@@ -247,14 +242,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const isHost = multiplayerConfig.isHost;
       const myField = isHost ? 'host_char_id' : 'guest_char_id';
 
-      // 1. Записываем реальный ID выбранного героя в базу
       await supabase.from('rooms').update({ [myField]: selectedChar.id }).eq('id', multiplayerConfig.roomId);
 
-      // 2. Проверяем, выбрал ли уже соперник
       const { data: room } = await supabase.from('rooms').select('*').eq('id', multiplayerConfig.roomId).single();
       
       if (room?.host_char_id && room?.guest_char_id) {
-        // Оба выбрали! Запускаем фазу жеребьевки 3D кубиком
         const firstTurnRole = Math.random() < 0.5 ? 'host' : 'guest';
         await supabase.from('rooms').update({
           status: 'rolling',
@@ -264,15 +256,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   };
 
-  // Завершение жеребьевки кубиком
+  // Завершение анимации кубика
   const handleFinishDiceRoll = async () => {
     setShowDiceRoll(false);
-    if (!isAiMode && multiplayerConfig && supabase && multiplayerConfig.isHost) {
-      await supabase.from('rooms').update({ status: 'playing' }).eq('id', multiplayerConfig.roomId);
+    if (!isAiMode && multiplayerConfig && supabase) {
+      const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
+      const isWinner = diceWinner === nickname;
+      setIsMyTurn(isWinner);
+
+      if (multiplayerConfig.isHost) {
+        await supabase.from('rooms').update({ status: 'playing' }).eq('id', multiplayerConfig.roomId);
+      }
     }
   };
 
-  // Отправка сообщений
+  // Отправка хода
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = (textOverride !== undefined ? textOverride : inputText).trim();
     if (!textToSend || !isMyTurn || isAiThinking || isSendingMessage) return;
@@ -369,7 +367,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       }
     } else {
-      // МУЛЬТИПЛЕЕР ОНЛАЙН
+      // ОНЛАЙН ДУЭЛЬ
       if (!supabase || !multiplayerConfig) {
         setIsSendingMessage(false);
         return;
@@ -388,7 +386,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         if (msgErr) throw msgErr;
 
-        // Передаем ход сопернику
         await supabase.from('rooms').update({
           current_turn: nextRole
         }).eq('id', multiplayerConfig.roomId);
@@ -440,7 +437,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   };
 
-  // ЧЕСТНОЕ УГАДЫВАНИЕ (ПРОВЕРКА РЕАЛЬНОГО ID)
   const handleMakeGuess = async () => {
     if (!accuseChar) return;
 
@@ -472,7 +468,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       }
     } else {
-      // ОНЛАЙН ПРОВЕРКА СОПЕРНИКА
       if (!supabase || !multiplayerConfig) return;
       const myRole = multiplayerConfig.isHost ? 'host' : 'guest';
       const enemyRole = multiplayerConfig.isHost ? 'guest' : 'host';
@@ -486,15 +481,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         return;
       }
 
-      // Точная проверка реального ID
       if (accuseChar.id.trim() === enemySecretId.trim()) {
-        // ПОБЕДА!
         await supabase.from('rooms').update({
           winner: myRole,
           finish_reason: `Игрок ${nickname} безошибочно раскрыл персонажа ${accuseChar.name}!`
         }).eq('id', multiplayerConfig.roomId);
       } else {
-        // ОШИБКА
         const currentLives = myRole === 'host' ? room.host_lives : room.guest_lives;
         const newLives = currentLives - 1;
         const livesField = myRole === 'host' ? 'host_lives' : 'guest_lives';
@@ -517,17 +509,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   return (
     <div className="relative w-full h-full flex flex-col justify-between overflow-hidden bg-black text-white select-none transition-colors duration-300">
       
-      {/* 3D-Кубик жеребьевки хода */}
+      {/* 3D-Кубик жеребьевки */}
       {showDiceRoll && (
         <DiceRollOverlay
           player1Name={nickname}
           player2Name={opponentNickname}
-          starterName={diceWinner}
+          starterName={diceWinner || nickname}
           onFinish={handleFinishDiceRoll}
         />
       )}
 
-      {/* ЭФФЕКТЫ: Конфетти при триумфе или раскол стекла при поражении */}
+      {/* Эффекты */}
       {gameResult.show && gameResult.isVictory && <ConfettiEffect />}
       {gameResult.show && !gameResult.isVictory && <ScreenCrackEffect />}
 
@@ -561,7 +553,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         <div className="flex items-center gap-1.5">
-          {/* Сердечки игрока (красные) */}
           {isConfirmed && opponentConfirmed && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-white/5 border border-white/10">
               {[1, 2, 3].map(i => (
@@ -578,7 +569,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             </div>
           )}
 
-          {/* Голубые сердечки ИИ */}
           {isConfirmed && isAiMode && (
             <div className="flex items-center gap-1 px-1.5 py-1 bg-sky-950/30 border border-sky-500/20">
               {[1, 2, 3].map(i => (
@@ -670,7 +660,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       </div>
 
-      {/* 3. ПОДТВЕРЖДЕНИЕ ВЫБОРА / ОЖИДАНИЕ ВЫБОРА СОПЕРНИКА */}
+      {/* 3. ПОДТВЕРЖДЕНИЕ ВЫБОРА / ОЖИДАНИЕ ВТОРОГО */}
       {!isConfirmed ? (
         <div className="shrink-0 w-full bg-black/95 border-t border-white/20 p-3 pb-3 flex flex-col gap-2 z-20 animate-in slide-in-from-bottom duration-300">
           {selectedChar ? (
@@ -718,7 +708,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       ) : null}
 
-      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА (АКТИВНА ТОЛЬКО КОГДА ОБА ВЫБРАЛИ) */}
+      {/* 4. НИЖНЯЯ ПАНЕЛЬ ХОДА */}
       {isConfirmed && opponentConfirmed && (
         <div className="shrink-0 px-3 pt-2 pb-2 bg-black/90 backdrop-blur-md border-t border-white/20 flex items-center justify-between z-20">
           <div className="flex items-center gap-2">
@@ -745,7 +735,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       {/* 5. ПОЛНОЭКРАННОЕ ДОСЬЕ [i] */}
       {infoChar && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 select-none animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-3xl flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3 select-none animate-in fade-in duration-300">
           <header className="pb-3 border-b border-white/20">
             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-mono">Досье персонажа</span>
             <h2 className="text-base font-black uppercase text-white truncate max-w-full">{infoChar.name}</h2>
@@ -874,7 +864,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         </div>
       )}
 
-      {/* 8. ЧАТ РАУНДА */}
+      {/* 8. ИСПРАВЛЕННЫЙ ЧАТ */}
       {isChatOpen && (
         <div className="fixed inset-0 z-[100] bg-neutral-950 text-white flex flex-col justify-between p-4 pt-[max(env(safe-area-inset-top),16px)] pb-3">
           
@@ -1013,15 +1003,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 disabled={!isMyTurn || isAiThinking || isSendingMessage}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={
-                  !isConfirmed || !opponentConfirmed
-                    ? "Ожидание выбора героев..."
-                    : isAiThinking 
-                    ? "ИИ думает..." 
-                    : isMyTurn 
-                    ? "Ваш ход! Задайте вопрос сопернику..." 
-                    : "Ход соперника..."
-                }
+                placeholder={isAiThinking ? "ИИ думает..." : "Задайте наводящий вопрос..."}
                 className="flex-1 bg-white/10 border border-white/30 px-3 py-3 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
               <button
